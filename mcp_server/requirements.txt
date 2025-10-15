@@ -1,0 +1,7 @@
+mcp
+psycopg[binary]
+python-dotenv
+openai
+streamlit
+requests
+pandas
