@@ -25,7 +25,7 @@ MCP_CONFIG = {
 
 # UI Configuration
 UI_CONFIG = {
-    "logo_path": "/home/ubuntu/MCP_App/mcp_client/RevealLabs_Logo.png",
+    "logo_path": "RevealLabs_Logo.png",  # Relative path for Docker compatibility
     "default_chat_limit": 5,
     "max_chat_history": 100,
     "typing_indicator_delay": 1.5

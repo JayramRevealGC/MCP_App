@@ -3,6 +3,7 @@ UI Components utility for reusable Streamlit components.
 Contains functions for rendering headers, sidebars, forms, and other UI elements.
 """
 import base64
+import os
 import streamlit as st
 
 # Local Imports
@@ -270,8 +271,26 @@ def render_custom_css():
 def render_header():
     """Render the application header with logo and tagline."""
     try:
-        with open(get_logo_path(), 'rb') as f:
-            logo_data = base64.b64encode(f.read()).decode()
+        logo_path = get_logo_path()
+        
+        # Try multiple possible paths for logo file
+        possible_paths = [
+            logo_path,  # Original path from config
+            f"/app/{logo_path}",  # Docker container path
+            f"./{logo_path}",  # Current directory
+            f"../{logo_path}",  # Parent directory
+        ]
+        
+        logo_found = False
+        for path in possible_paths:
+            if os.path.exists(path):
+                with open(path, 'rb') as f:
+                    logo_data = base64.b64encode(f.read()).decode()
+                logo_found = True
+                break
+        
+        if not logo_found:
+            raise FileNotFoundError(f"Logo file not found in any of the expected locations: {possible_paths}")
         
         st.markdown(f"""
         <div class="main-header">
