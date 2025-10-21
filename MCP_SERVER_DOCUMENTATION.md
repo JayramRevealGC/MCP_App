@@ -679,6 +679,13 @@ MCP_CONFIG = {
     "timeout": 30,
     "tool_name": "query_users"
 }
+
+UI_CONFIG = {
+    "logo_path": "RevealLabs_Logo.png",
+    "default_chat_limit": 5,
+    "max_chat_history": 100,
+    "typing_indicator_delay": 1.5
+}
 ```
 
 ### Network Configuration
@@ -690,6 +697,36 @@ MCP_CONFIG = {
 **Host Binding**:
 - Server: `0.0.0.0:8001` (Docker-compatible)
 - Client: `0.0.0.0:8501` (Docker-compatible)
+
+### Docker-Specific Considerations
+
+#### Logo Path Configuration
+The logo path is configured as a relative path (`RevealLabs_Logo.png`) to ensure compatibility between local development and Docker containerized deployment:
+
+**Local Development**: Logo file is in the same directory as the Streamlit app
+**Docker Container**: Logo file is copied to `/app/` directory during build
+
+The `render_header()` function includes fallback logic to check multiple possible paths:
+```python
+possible_paths = [
+    logo_path,  # Original path from config
+    f"/app/{logo_path}",  # Docker container path
+    f"./{logo_path}",  # Current directory
+    f"../{logo_path}",  # Parent directory
+]
+```
+
+#### File Structure in Docker
+```
+/app/
+├── streamlit_app.py
+├── RevealLabs_Logo.png
+├── utils/
+│   ├── config.py
+│   ├── ui_components.py
+│   └── ...
+└── requirements.txt
+```
 
 ### Security Considerations
 
