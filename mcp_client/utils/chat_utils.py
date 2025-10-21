@@ -1,7 +1,7 @@
 import uuid
 import streamlit as st
 
-#MCP Client Imports
+#Local Imports
 from utils.mcp_client import MCPClient
 
 def initialize_session_state():
@@ -16,7 +16,9 @@ def create_new_chat():
     chat_id = str(uuid.uuid4())
     st.session_state.chats[chat_id] = {
         'id': chat_id,
-        'messages': [],
+        'messages': [
+            {"role": "assistant", "content": "Welcome to Reveal Labs AI Assistant! I can help you with data analysis, database queries, and AI-powered insights. What can I do for you today?"}
+        ],
         'mcp_client': MCPClient()
     }
     st.session_state.current_chat_id = chat_id

@@ -1,4 +1,5 @@
 import json
+import time
 import requests
 import streamlit as st
 from typing import Dict, List, Optional
@@ -6,9 +7,10 @@ from typing import Dict, List, Optional
 class MCPClient:
     """Client wrapper for MCP server communication."""
     
-    def __init__(self, server_url: str = "http://54.164.108.181:8001/mcp"):
+    def __init__(self, server_url: str = "http://54.164.108.181:8001/mcp", timeout: int = 30):
         self.server_url = server_url
         self.session_id = None
+        self.timeout = timeout  # Request timeout in seconds
         
     def parse_sse_response(self, response_text: str) -> Optional[Dict]:
         """Parse Server-Sent Events response to extract JSON data."""
@@ -102,11 +104,14 @@ class MCPClient:
             return []
     
     def call_tool(self, tool_name: str, arguments: Dict) -> Optional[Dict]:
-        """Call a specific tool with given arguments."""
+        """Call a specific tool with given arguments and timeout protection."""
         if not self.session_id:
             return None
             
         try:
+            # Record start time for timeout tracking
+            start_time = time.time()
+            
             response = requests.post(self.server_url, 
                 json={
                     "jsonrpc": "2.0",
@@ -121,12 +126,28 @@ class MCPClient:
                     "Content-Type": "application/json",
                     "Accept": "application/json, text/event-stream",
                     "mcp-session-id": self.session_id
-                }
+                },
+                timeout=self.timeout  # Add timeout to the request
             )
+            
+            # Check if request took too long
+            elapsed_time = time.time() - start_time
+            if elapsed_time > self.timeout:
+                st.error(f"Request timed out after {elapsed_time:.2f} seconds")
+                return {"error": f"Request timeout after {self.timeout} seconds"}
             
             tool_data = self.parse_sse_response(response.text)
             return tool_data
             
+        except requests.exceptions.Timeout:
+            st.error(f"Request timed out after {self.timeout} seconds")
+            return {"error": f"Request timeout after {self.timeout} seconds"}
+        except requests.exceptions.ConnectionError:
+            st.error("Connection error: Unable to reach the MCP server")
+            return {"error": "Connection error: Unable to reach the MCP server"}
+        except requests.exceptions.RequestException as e:
+            st.error(f"Request failed: {str(e)}")
+            return {"error": f"Request failed: {str(e)}"}
         except Exception as e:
             st.error(f"Failed to call tool: {str(e)}")
-            return None
+            return {"error": f"Failed to call tool: {str(e)}"}
