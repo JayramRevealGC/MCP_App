@@ -75,34 +75,6 @@ class MCPClient:
             st.error(f"Failed to initialize MCP session: {str(e)}")
             return False
     
-    def get_available_tools(self) -> List[Dict]:
-        """Get list of available tools from MCP server."""
-        if not self.session_id:
-            return []
-            
-        try:
-            tools_response = requests.post(self.server_url, 
-                json={
-                    "jsonrpc": "2.0",
-                    "id": 2,
-                    "method": "tools/list"
-                },
-                headers={
-                    "Content-Type": "application/json",
-                    "Accept": "application/json, text/event-stream",
-                    "mcp-session-id": self.session_id
-                }
-            )
-            
-            tools_data = self.parse_sse_response(tools_response.text)
-            if tools_data and "result" in tools_data:
-                return tools_data["result"].get("tools", [])
-            return []
-            
-        except Exception as e:
-            st.error(f"Failed to get tools: {str(e)}")
-            return []
-    
     def call_tool(self, tool_name: str, arguments: Dict) -> Optional[Dict]:
         """Call a specific tool with given arguments and timeout protection."""
         if not self.session_id:

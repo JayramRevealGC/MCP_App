@@ -42,6 +42,12 @@ def main():
     # Initialize session state
     initialize_session_state()
     
+    # Initialize chat if needed (before rendering sidebar)
+    current_chat = get_current_chat()
+    if not current_chat:
+        from utils.chat_utils import create_new_chat
+        create_new_chat()
+    
     # Render sidebar
     render_sidebar()
     
@@ -54,12 +60,6 @@ def main():
 def render_chat_interface():
     """Render the main chat interface."""
     current_chat = get_current_chat()
-    
-    # Automatically create a new chat if none exists
-    if not current_chat:
-        from utils.chat_utils import create_new_chat
-        create_new_chat()
-        current_chat = get_current_chat()
     
     # Only render chat container if we have messages
     if current_chat and current_chat.get('messages'):

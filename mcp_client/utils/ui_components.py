@@ -2,12 +2,11 @@
 UI Components utility for reusable Streamlit components.
 Contains functions for rendering headers, sidebars, forms, and other UI elements.
 """
-import base64
-import os
+
 import streamlit as st
 
 # Local Imports
-from .config import get_config, get_logo_path, get_app_tagline
+from .config import get_config, get_app_tagline
 
 def render_custom_css():
     """Render the custom CSS styles for the application."""
@@ -83,6 +82,15 @@ def render_custom_css():
             filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
         }}
         
+        .tagline-text {{
+            color: rgba(255,255,255,0.95);
+            font-size: 32px;
+            font-weight: 700;
+            margin: 0;
+            line-height: 1.2;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }}
+        
         /* Minimal chat container */
         .chat-container-minimal {{
             padding: 0.5rem 0;
@@ -105,8 +113,8 @@ def render_custom_css():
         }}
         
         .bot-message {{
-            background: linear-gradient(to right, #2563eb, #3b82f6, #10b981);
-            color: white;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            color: #495057;
             padding: 16px 24px;
             border-radius: 20px 20px 20px 6px;
             margin: 12px 0;
@@ -115,7 +123,7 @@ def render_custom_css():
             animation: slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             font-weight: 500;
             line-height: 1.5;
-            border: 1px solid rgba(37, 99, 235, 0.3);
+            border: 1px solid rgba(108, 117, 125, 0.2);
         }}
         
         /* Input styling */
@@ -199,6 +207,8 @@ def render_custom_css():
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             backdrop-filter: blur(10px);
+            width: 100%;
+            min-width: 200px;
         }}
         
         section[data-testid="stSidebar"] .stButton > button:hover {{
@@ -206,6 +216,45 @@ def render_custom_css():
             transform: translateY(-1px);
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
             border-color: rgba(255, 255, 255, 0.5);
+        }}
+        
+        /* Enhanced styling for active/current chat button */
+        section[data-testid="stSidebar"] .stButton > button[kind="primary"] {{
+            background: rgba(255, 255, 255, 0.4) !important;
+            border: 2px solid rgba(255, 255, 255, 0.8) !important;
+            font-weight: 600 !important;
+            box-shadow: 0 4px 12px rgba(255, 255, 255, 0.3) !important;
+            transform: scale(1.02) !important;
+        }}
+        
+        section[data-testid="stSidebar"] .stButton > button[kind="primary"]:hover {{
+            background: rgba(255, 255, 255, 0.5) !important;
+            border-color: rgba(255, 255, 255, 1) !important;
+            transform: scale(1.02) translateY(-1px) !important;
+            box-shadow: 0 6px 16px rgba(255, 255, 255, 0.4) !important;
+        }}
+        
+        /* Download button styling in sidebar */
+        section[data-testid="stSidebar"] .stDownloadButton > button {{
+            background: rgba(255, 255, 255, 0.2) !important;
+            color: white !important;
+            border: 1px solid rgba(255, 255, 255, 0.3) !important;
+            border-radius: 12px !important;
+            padding: 12px 24px !important;
+            font-weight: 500 !important;
+            font-size: 14px !important;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+            backdrop-filter: blur(10px) !important;
+            width: 100% !important;
+            min-width: 200px !important;
+        }}
+        
+        section[data-testid="stSidebar"] .stDownloadButton > button:hover {{
+            background: rgba(255, 255, 255, 0.3) !important;
+            transform: translateY(-1px) !important;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2) !important;
+            border-color: rgba(255, 255, 255, 0.5) !important;
         }}
         
         /* Sidebar info box styling */
@@ -269,43 +318,16 @@ def render_custom_css():
     """, unsafe_allow_html=True)
 
 def render_header():
-    """Render the application header with logo and tagline."""
-    try:
-        logo_path = get_logo_path()
-        
-        # Try multiple possible paths for logo file
-        possible_paths = [
-            logo_path,  # Original path from config
-            f"/app/{logo_path}",  # Docker container path
-            f"./{logo_path}",  # Current directory
-            f"../{logo_path}",  # Parent directory
-        ]
-        
-        logo_found = False
-        for path in possible_paths:
-            if os.path.exists(path):
-                with open(path, 'rb') as f:
-                    logo_data = base64.b64encode(f.read()).decode()
-                logo_found = True
-                break
-        
-        if not logo_found:
-            raise FileNotFoundError(f"Logo file not found in any of the expected locations: {possible_paths}")
-        
-        st.markdown(f"""
-        <div class="main-header">
-            <div class="logo-container">
-                <img src="data:image/png;base64,{logo_data}" alt="Reveal Labs Logo" class="logo-image">
-            </div>
-            <p style="color: rgba(255,255,255,0.9); margin-top: 8px; font-size: 16px;">
+    """Render the application header."""
+    st.markdown(f"""
+    <div class="main-header">
+        <div style="text-align: center; color: white;">
+            <div class="tagline-text">
                 {get_app_tagline()}
-            </p>
+            </div>
         </div>
-        """, unsafe_allow_html=True)
-    except FileNotFoundError:
-        st.error("Logo file not found. Please check the logo path in configuration.")
-    except Exception as e:
-        st.error(f"Error loading logo: {str(e)}")
+    </div>
+    """, unsafe_allow_html=True)
 
 def render_instructions():
     """Render the database instructions expander."""
@@ -333,11 +355,3 @@ def render_error_message(message: str, is_timeout: bool = False):
         st.error(f"⏰ {message}")
     else:
         st.error(f"❌ {message}")
-
-def render_success_message(message: str):
-    """Render a success message."""
-    st.success(f"✅ {message}")
-
-def render_info_message(message: str):
-    """Render an info message."""
-    st.info(f"ℹ️ {message}")

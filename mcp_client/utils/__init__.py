@@ -1,14 +1,12 @@
 # Utils package for MCP Client
 
-from .config import get_config, get_logo_path, get_mcp_server_url, get_timeout
+from .config import get_config, get_logo_path
 from .ui_components import (
     render_custom_css, 
     render_header, 
     render_instructions, 
     render_footer,
-    render_error_message,
-    render_success_message,
-    render_info_message
+    render_error_message
 )
 from .sidebar_components import (
     render_sidebar,
@@ -29,11 +27,11 @@ from .message_processing import (
 
 __all__ = [
     # Config utilities
-    'get_config', 'get_logo_path', 'get_mcp_server_url', 'get_timeout',
+    'get_config', 'get_logo_path',
     
     # UI components
     'render_custom_css', 'render_header', 'render_instructions', 'render_footer',
-    'render_error_message', 'render_success_message', 'render_info_message',
+    'render_error_message',
     
     # Sidebar components
     'render_sidebar', 'render_chat_settings', 'render_chat_management',

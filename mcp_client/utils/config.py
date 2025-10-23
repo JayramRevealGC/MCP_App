@@ -25,10 +25,7 @@ MCP_CONFIG = {
 
 # UI Configuration
 UI_CONFIG = {
-    "logo_path": "RevealLabs_Logo.png",  # Relative path for Docker compatibility
-    "default_chat_limit": 5,
-    "max_chat_history": 100,
-    "typing_indicator_delay": 1.5
+    "logo_path": "RevealLabs_Logo.png"  # Relative path for Docker compatibility
 }
 
 # Color Theme Configuration
@@ -47,7 +44,7 @@ DB_INSTRUCTIONS = {
     "instructions": [
         "📋 **Fetch Tables**: List all available tables in the database",
         "🔍 **Fetch Records**: Get n records from any table with advanced filtering and sorting", 
-        "🔗 **Join Tables**: Join two tables with flexible join types (INNER, LEFT, RIGHT, FULL OUTER)",
+        "🔗 **Join Tables**: Join two tables with flexible join types",
         "📊 **Append Tables**: Combine two tables vertically using UNION ALL",
         "📈 **Table Summary**: Get comprehensive table information and statistics",
         "🥧 **Column Summary**: Create pie charts by counting values in categorical columns",
@@ -82,17 +79,6 @@ def get_logo_path() -> str:
     """Get the path to the logo file."""
     return UI_CONFIG["logo_path"]
 
-def get_mcp_server_url() -> str:
-    """Get the MCP server URL."""
-    return MCP_CONFIG["server_url"]
-
-def get_timeout() -> int:
-    """Get the request timeout in seconds."""
-    return MCP_CONFIG["timeout"]
-
-def get_app_title() -> str:
-    """Get the application title."""
-    return APP_CONFIG["page_title"]
 
 def get_app_tagline() -> str:
     """Get the application tagline."""

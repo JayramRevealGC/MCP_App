@@ -191,3 +191,45 @@ async def parse_nl_to_intent(user_input: str) -> dict:
         return json.loads(intent_text)
     except Exception:
         return {"action": "unknown", "filters": {}}
+
+async def parse_error(user_query: str, error_message: str) -> dict:
+    """
+    Parse user query and error message using LLM to provide a better-framed error message.
+    Returns a dictionary with 'content' and 'isError' keys.
+    """
+    system_prompt = """You are an error message parser and translator. Your job is to take a user's query and the technical error message that occurred, and provide a user-friendly, helpful error message that explains what went wrong and suggests how to fix it.
+
+    Guidelines:
+    1. Make the error message clear and understandable for non-technical users
+    2. Explain what the user was trying to do based on their query
+    3. Suggest specific actions they can take to resolve the issue
+    4. Be helpful and encouraging, not just technical
+    5. Keep the message concise but informative
+    6. If the error is about missing data or tables, suggest what they might be looking for
+    7. If it's a syntax or format issue, provide examples of correct usage
+
+    Return ONLY the improved error message content as plain text. Do not include any JSON formatting or additional structure."""
+
+    client = openai.OpenAI()
+    
+    user_prompt = f"""User Query: "{user_query}"
+
+Technical Error: "{error_message}"
+
+Please provide a user-friendly error message that explains what went wrong and how to fix it."""
+
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt}
+        ],
+        temperature=0.3
+    )
+
+    improved_error_message = response.choices[0].message.content.strip()
+    
+    return {
+        "content": improved_error_message,
+        "isError": True
+    }

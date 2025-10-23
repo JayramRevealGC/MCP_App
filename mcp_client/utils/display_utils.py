@@ -7,16 +7,11 @@ def extract_content_from_result(result):
     """Extract and parse content from MCP result."""
     if result and 'content' in result and isinstance(result['content'], list):
         content_text = result['content'][0]['text']
-        
-        if result['isError']:
-            return content_text, True
-        # Add error handling for JSON parsing
         try:
             parsed_content = json.loads(content_text)
-            return parsed_content.get('result'), False
+            return parsed_content.get('result')
         except json.JSONDecodeError as e:
-            print(f"Raw content: {content_text}")
-            return "Error parsing response", True
+            return "Error parsing response"
     return "No response received"
 
 def is_summary_data(data):
@@ -40,97 +35,53 @@ def is_visualization_data(data):
     """Check if the data contains visualization information."""
     return isinstance(data, dict) and "visualization" in data and "data" in data
 
-def render_bar_chart(visualization_data):
-    """Render a bar chart based on visualization configuration."""
+def render_histogram(visualization_data, chart_type="histogram"):
+    """Render a histogram or bar chart based on visualization configuration."""
     if not visualization_data or not visualization_data.get("data"):
-        st.error("No data available for bar chart")
+        chart_name = "histogram" if chart_type == "histogram" else "bar chart"
+        st.error(f"No data available for {chart_name}")
         return
     
     config = visualization_data.get("config", {})
     data = visualization_data.get("data", [])
     
     if not data:
-        st.error("No data points available for bar chart")
+        chart_name = "histogram" if chart_type == "histogram" else "bar chart"
+        st.error(f"No data points available for {chart_name}")
         return
     
     # Convert data to DataFrame
     df = pd.DataFrame(data)
     
-    # Get field names from config, but use actual data columns if config fields don't exist
-    value_field = config.get("value_field", "value")
-    count_field = config.get("count_field", "count")
-    title = config.get("title", "Bar Chart")
+    # Set default field names based on chart type
+    if chart_type == "histogram":
+        x_field = config.get("category_field", "category")
+        y_field = config.get("value_field", "total_value")
+        default_title = "Histogram"
+    else:  # bar chart
+        x_field = config.get("value_field", "value")
+        y_field = config.get("count_field", "count")
+        default_title = "Bar Chart"
+    
+    title = config.get("title", default_title)
     
     # If config fields don't exist, use the actual column names from the data
-    if value_field not in df.columns or count_field not in df.columns:
+    if x_field not in df.columns or y_field not in df.columns:
         if len(df.columns) >= 2:
             # Use the actual column names from the data
-            value_field = df.columns[0]  # First column (e.g., actual column name)
-            count_field = df.columns[1]  # Second column (e.g., "count")
+            x_field = df.columns[0]  # First column
+            y_field = df.columns[1]  # Second column
         else:
-            st.error(f"Required fields '{value_field}' or '{count_field}' not found in data")
+            chart_name = "histogram" if chart_type == "histogram" else "bar chart"
+            st.error(f"Required fields not found in data for {chart_name}")
             return
     
     # Create bar chart using Altair
     chart = alt.Chart(df).mark_bar().encode(
-        x=alt.X(field=value_field, type="nominal", sort="-y", axis=alt.Axis(labelAngle=0)),
-        y=alt.Y(field=count_field, type="quantitative"),
-        color=alt.Color(field=value_field, type="nominal", scale=alt.Scale(scheme="category20")),
-        tooltip=[value_field, count_field]
-    ).properties(
-        title=title,
-        width=600,
-        height=400
-    ).resolve_scale(
-        color="independent"
-    )
-    
-    # Display the chart
-    st.altair_chart(chart, use_container_width=True)
-    
-    # Also display the data as a table
-    st.subheader("Data Summary")
-    display_df = df.copy()
-    display_df = display_df.astype(str)
-    st.dataframe(display_df, width='stretch', hide_index=True)
-
-def render_histogram(visualization_data):
-    """Render a histogram based on visualization configuration."""
-    if not visualization_data or not visualization_data.get("data"):
-        st.error("No data available for histogram")
-        return
-    
-    config = visualization_data.get("config", {})
-    data = visualization_data.get("data", [])
-    
-    if not data:
-        st.error("No data points available for histogram")
-        return
-    
-    # Convert data to DataFrame
-    df = pd.DataFrame(data)
-    
-    # Get field names from config, but use actual data columns if config fields don't exist
-    category_field = config.get("category_field", "category")
-    value_field = config.get("value_field", "total_value")
-    title = config.get("title", "Histogram")
-    
-    # If config fields don't exist, use the actual column names from the data
-    if category_field not in df.columns or value_field not in df.columns:
-        if len(df.columns) >= 2:
-            # Use the actual column names from the data
-            category_field = df.columns[0]  # First column (e.g., "updated_by")
-            value_field = df.columns[1]     # Second column (e.g., "capex_build_used_val")
-        else:
-            st.error(f"Required fields '{category_field}' or '{value_field}' not found in data")
-            return
-    
-    # Create histogram using Altair
-    chart = alt.Chart(df).mark_bar().encode(
-        x=alt.X(field=category_field, type="nominal", sort="-y", axis=alt.Axis(labelAngle=0)),
-        y=alt.Y(field=value_field, type="quantitative"),
-        color=alt.Color(field=category_field, type="nominal", scale=alt.Scale(scheme="category20")),
-        tooltip=[category_field, value_field]
+        x=alt.X(field=x_field, type="nominal", sort="-y", axis=alt.Axis(labelAngle=0)),
+        y=alt.Y(field=y_field, type="quantitative"),
+        color=alt.Color(field=x_field, type="nominal", scale=alt.Scale(scheme="category20")),
+        tooltip=[x_field, y_field]
     ).properties(
         title=title,
         width=600,
