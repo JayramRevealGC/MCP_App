@@ -22,6 +22,7 @@ from utils.message_processing import (
 from utils.config import get_config
 from utils.sidebar_components import render_sidebar
 from utils.chat_utils import initialize_session_state, get_current_chat
+from utils.speech_utils import render_audio_transcription, render_chat_history
 
 def main():
     """Main application function."""
@@ -49,10 +50,12 @@ def main():
         create_new_chat()
     
     # Render sidebar
-    render_sidebar()
+    speech_model = render_sidebar()
     
     # Main chat interface
     render_chat_interface()
+
+    render_audio_transcription(speech_model)
     
     # Footer
     render_footer()

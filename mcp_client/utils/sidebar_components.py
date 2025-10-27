@@ -12,6 +12,7 @@ from datetime import datetime
 # Local Imports
 from .config import get_logo_path
 from .chat_utils import create_new_chat, get_current_chat
+from .speech_utils import render_speech_settings
 
 def render_sidebar():
     """Render the complete sidebar with chat management and settings."""
@@ -20,10 +21,14 @@ def render_sidebar():
         st.markdown("---")  # Add a separator line
         render_chat_settings()
         st.markdown("---")  # Add a separator line
+        speech_model = render_speech_settings()
+        st.markdown("---")  # Add a separator line
         render_chat_management()
         render_chat_history()
         st.markdown("---")  # Add a separator line
         render_export_options()
+
+    return speech_model
 
 def render_sidebar_logo():
     """Render the logo and tagline at the top of the sidebar."""

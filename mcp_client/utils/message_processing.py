@@ -204,9 +204,14 @@ def render_single_message(message: Dict[str, Any]):
     """
     role = message['role']
     content = message['content']
-    
+
     if role == "user":
         st.markdown(f'<div class="user-message">{content}</div>', unsafe_allow_html=True)
+        
+        # Display audio if present
+        if message.get("audio"):
+            with st.expander("🎧 Audio clip"):
+                st.audio(message["audio"])
     else:
         # Handle different content types for assistant messages
         if is_visualization_data(content):

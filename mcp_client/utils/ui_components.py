@@ -65,7 +65,43 @@ def render_custom_css():
             background: linear-gradient(45deg, rgba(255,255,255,0.2) 0%, transparent 50%, rgba(255,255,255,0.1) 100%);
             pointer-events: none;
         }}
-        
+
+        .stExpander > details > summary, .stExpander > details > summary:hover, details[open] > summary:hover {{
+            color: #374151;
+        }}
+
+        .stExpander > details[open] > summary {{
+            color: #ffffff;
+        }}
+
+        details[open] > div {{
+            color: #374151;
+        }}
+
+        .stSpinner, .stCacheSpinner {{
+            background: transparent !important;
+        }}
+
+        div[data-testid="stSpinner"] svg,
+        div[data-testid="stSpinner"] svg circle,
+        div[data-testid="stSpinner"] svg path {{
+            stroke: #374151 !important;
+            fill: #374151 !important;
+            color: #374151 !important;
+        }}
+
+        .stCacheSpinner svg,
+        .stCacheSpinner svg circle,
+        .stCacheSpinner svg path {{
+            stroke: #374151 !important;
+            fill: #374151 !important;
+            color: #374151 !important;
+        }}
+
+        .stCacheSpinner > div, .stCacheSpinner > div > div {{
+            color: #374151 !important;
+        }}
+
         /* Logo styling */
         .logo-container {{
             display: flex;
@@ -127,13 +163,19 @@ def render_custom_css():
         }}
         
         /* Input styling */
+        .stTextInput > div {{
+            border-radius: 4rem;
+            border: transparent;
+        }}
+
         .stTextInput > div > div > input {{
             background: white;
             border: 2px solid var(--neutral-200);
-            border-radius: 16px;
+            border-radius: 4rem;
             padding: 16px 24px;
             font-size: 16px;
             font-weight: 400;
+            color: #495057;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             box-shadow: var(--shadow-sm);
         }}
@@ -142,15 +184,19 @@ def render_custom_css():
             border-color: var(--primary-blue-light);
             box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1), var(--shadow-md);
             outline: none;
+            caret-color: var(--primary-blue-light);
         }}
         
         /* Button styling */
         .stButton > button {{
+            max-width: 8rem;
+            width: 100%;
+            max-height: 100%;
             background: linear-gradient(to right, #2563eb, #3b82f6, #10b981);
             color: white;
             border: none;
             border-radius: 16px;
-            padding: 14px 28px;
+            padding: 8% 16%;
             font-weight: 600;
             font-size: 16px;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
