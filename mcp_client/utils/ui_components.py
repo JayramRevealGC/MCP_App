@@ -83,11 +83,12 @@ def render_custom_css():
             background: transparent !important;
         }}
         
-        .stSpinner > div, .stSpinner > div > div > i {{
+        .stSpinner > div, .stSpinner > div > i {{
             color: #374151 !important;
             stroke: #374151 !important;
             fill: #374151 !important;
             background: transparent !important;
+            border-color: rgb(250, 250, 250, 0.2) rgba(0, 0, 0) rgba(0, 0, 0);
         }}
 
         /* Logo styling */

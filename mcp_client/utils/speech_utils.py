@@ -4,8 +4,6 @@ import tempfile
 import streamlit as st
 from faster_whisper import WhisperModel
 
-from .message_processing import process_user_message
-
 ####################
 # HELPER FUNCTIONS #
 ####################
