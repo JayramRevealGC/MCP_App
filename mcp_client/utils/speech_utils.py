@@ -4,11 +4,11 @@ import tempfile
 import streamlit as st
 from faster_whisper import WhisperModel
 
-from .chat_utils import get_current_chat
+from .message_processing import process_user_message
 
-###########
-# Helpers #
-###########
+####################
+# HELPER FUNCTIONS #
+####################
 def has_cuda() -> bool:
     # library-agnostic check (Torch optional)
     try:
@@ -24,21 +24,16 @@ def sha1_bytes(b: bytes) -> str:
     return h.hexdigest()
 
 def add_user_message(text: str, audio_bytes: bytes | None = None):
-    message = {"role": "user", "content": text, "audio": audio_bytes}
+    # message = {"role": "user", "content": text, "audio": audio_bytes}
     
-    # Get current chat
-    current_chat = get_current_chat()
-    
-    if current_chat:
-        # Add to existing chat's messages
-        if "messages" not in current_chat:
-            current_chat["messages"] = []
-        current_chat["messages"].append(message)
-    else:
-        # Fallback: add to session_state.messages if no active chat
-        if "messages" not in st.session_state:
-            st.session_state.messages = []
-        st.session_state.messages.append(message)
+    # # Get current chat
+    # current_chat = get_current_chat()
+    # chat_id = current_chat['id'] if current_chat else None
+
+    # if chat_id in st.session_state.chats:
+    #     st.session_state.chats[chat_id]['messages'].append(message)
+
+    process_user_message(text, True, audio_bytes)
 
 ###############
 # Cache Model #
@@ -51,14 +46,11 @@ def load_model_cached(model: str, device: str, compute_type: str):
 # Sidebar Configuration #
 #########################
 def render_speech_settings():
-    """
+    '''
     Render sidebar with model settings and controls.
-    Initializes session state, provides model configuration options,
-    and loads the Whisper model with selected settings.
-    
-    Returns:
-        WhisperModel: The loaded Whisper model instance
-    """
+    Initializes default session state, provides model configuration options, and loads the Whisper model with selected settings.
+    Returns: WhisperModel: The loaded Whisper model instance
+    '''
     # Initialize session state defaults
     if "device" not in st.session_state:
         st.session_state.device = "cuda" if has_cuda() else "cpu"
@@ -117,53 +109,31 @@ def render_speech_settings():
         
         return model
 
-#####################
-# Chat Display Area #
-#####################
-def render_chat_history():
-    """
-    Render the conversation history from session state.
-    Displays user messages with optional audio playback.
-    """    
-    for msg in st.session_state.messages:
-        with st.chat_message("user"):
-            st.write(msg["content"])
-            if msg.get("audio"):
-                with st.expander("🎧 Audio clip"):
-                    st.audio(msg["audio"])
-    
-    st.write("---")
-
 ###################
 # Audio Component #
 ###################
 def render_audio_transcription(model) -> None:
-    """
+    '''
     Render audio input component and handle automatic transcription.
-    
     Args:
-        model: The loaded WhisperModel instance for transcription
-        
+        model: loaded Whisper Model instance for transcription
     Features:
         - Records audio at 48kHz sample rate
         - Automatically transcribes new audio
         - Caches transcriptions by audio hash to avoid re-processing
         - Adds transcribed text to chat history
-    """
+    '''
     
     # Transcription cache (per audio hash)
-    @st.cache_data(show_spinner="Procressing audio…")
     def transcribe_bytes_cached(wav_bytes: bytes, *, beam_size: int = 5) -> dict[str, any]:
-        """
+        '''
         Transcribe audio bytes using cached Whisper model.
-        
         Args:
             wav_bytes: Audio data in WAV format
             beam_size: Beam search size for transcription accuracy
-            
         Returns:
             Dict containing 'text' and 'language' keys
-        """
+        '''
         # Save to temp file for faster-whisper
         with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
             tmp.write(wav_bytes)
@@ -201,13 +171,3 @@ def render_audio_transcription(model) -> None:
                     
                 except Exception as e:
                     st.error(f"Transcription failed: {e}")
-
-# ###########################
-# # Optional: text chat box #
-# ###########################
-# user_text = st.chat_input("Type a message (optional)…")
-# if user_text:
-#     add_user_message(user_text)
-#     st.rerun()
-
-# st.caption("Local transcription with faster-whisper. The model loads once, and transcription starts automatically when recording stops.")

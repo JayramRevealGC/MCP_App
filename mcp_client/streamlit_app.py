@@ -22,7 +22,7 @@ from utils.message_processing import (
 from utils.config import get_config
 from utils.sidebar_components import render_sidebar
 from utils.chat_utils import initialize_session_state, get_current_chat
-from utils.speech_utils import render_audio_transcription, render_chat_history
+from utils.speech_utils import render_audio_transcription
 
 def main():
     """Main application function."""

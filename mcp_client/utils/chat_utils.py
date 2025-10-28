@@ -30,10 +30,17 @@ def get_current_chat():
         return st.session_state.chats[st.session_state.current_chat_id]
     return None
 
-def add_message_to_chat(chat_id: str, role: str, content):
+def add_message_to_chat(chat_id: str, role: str, content, audio_bytes: bytes | None = None):
     """Add a message to a specific chat."""
     if chat_id in st.session_state.chats:
-        st.session_state.chats[chat_id]['messages'].append({
-            'role': role,
-            'content': content
-        })
+        if audio_bytes is None:
+            st.session_state.chats[chat_id]['messages'].append({
+                'role': role,
+                'content': content
+            })
+        else:
+            st.session_state.chats[chat_id]['messages'].append({
+                'role': role,
+                'content': content,
+                'audio': audio_bytes
+            })

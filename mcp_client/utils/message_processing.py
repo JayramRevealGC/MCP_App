@@ -15,7 +15,7 @@ from .ui_components import render_error_message
 from .chat_utils import get_current_chat, add_message_to_chat
 from .display_utils import extract_content_from_result, is_summary_data, display_summary_data, is_visualization_data, render_histogram
 
-def process_user_message(user_input: str) -> bool:
+def process_user_message(user_input: str, audio=False, audio_bytes: bytes | None = None) -> bool:
     """
     Process a user message and handle the MCP response.
     
@@ -36,7 +36,10 @@ def process_user_message(user_input: str) -> bool:
         return False
     
     # Add user message to chat
-    add_message_to_chat(current_chat['id'], "user", user_input)
+    if audio:
+        add_message_to_chat(current_chat['id'], "user", user_input, audio_bytes)
+    else:
+        add_message_to_chat(current_chat['id'], "user", user_input)
     
     # Initialize MCP client if needed
     mcp_client = current_chat['mcp_client']

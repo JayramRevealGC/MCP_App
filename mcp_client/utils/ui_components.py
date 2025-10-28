@@ -78,28 +78,16 @@ def render_custom_css():
             color: #374151;
         }}
 
+        /* Spinner styling */
         .stSpinner, .stCacheSpinner {{
             background: transparent !important;
         }}
-
-        div[data-testid="stSpinner"] svg,
-        div[data-testid="stSpinner"] svg circle,
-        div[data-testid="stSpinner"] svg path {{
+        
+        .stSpinner > div, .stSpinner > div > div > i {{
+            color: #374151 !important;
             stroke: #374151 !important;
             fill: #374151 !important;
-            color: #374151 !important;
-        }}
-
-        .stCacheSpinner svg,
-        .stCacheSpinner svg circle,
-        .stCacheSpinner svg path {{
-            stroke: #374151 !important;
-            fill: #374151 !important;
-            color: #374151 !important;
-        }}
-
-        .stCacheSpinner > div, .stCacheSpinner > div > div {{
-            color: #374151 !important;
+            background: transparent !important;
         }}
 
         /* Logo styling */
