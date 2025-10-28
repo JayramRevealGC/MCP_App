@@ -15,7 +15,7 @@ from .ui_components import render_error_message
 from .chat_utils import get_current_chat, add_message_to_chat
 from .display_utils import extract_content_from_result, is_summary_data, display_summary_data, is_visualization_data, render_histogram
 
-def process_user_message(user_input: str, audio=False, audio_bytes: bytes | None = None) -> bool:
+def process_user_message(user_input: str) -> bool:
     """
     Process a user message and handle the MCP response.
     
@@ -34,6 +34,9 @@ def process_user_message(user_input: str, audio=False, audio_bytes: bytes | None
     if not current_chat:
         st.error("No active chat session. Please create a new chat.")
         return False
+    
+    audio_bytes = st.session_state.get('current_audio_bytes')
+    audio = True if audio_bytes else False
     
     # Add user message to chat
     if audio:
@@ -239,4 +242,6 @@ def render_single_message(message: Dict[str, Any]):
 def clear_input_and_rerun():
     """Clear the input field and rerun the app to display new messages."""
     st.session_state.input_counter = st.session_state.get('input_counter', 0) + 1
+    st.session_state.transcribed_text = ""
+    st.session_state.current_audio_bytes = None
     st.rerun()

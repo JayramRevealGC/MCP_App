@@ -80,12 +80,15 @@ def render_chat_interface():
 def render_input_area():
     """Render the input area for user messages."""
     col1, col2 = st.columns([6, 1])
+
+    transcribed_text = st.session_state.get("transcribed_text", "")
     
     with col1:
         user_input = st.text_input(
             "Message",
             placeholder="Ask about data, run queries, or request analysis...",
             key=f"user_input_{st.session_state.get('input_counter', 0)}",
+            value=transcribed_text,
             label_visibility="collapsed"
         )
     

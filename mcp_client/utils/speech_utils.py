@@ -35,6 +35,13 @@ def add_user_message(text: str, audio_bytes: bytes | None = None):
 
     process_user_message(text, True, audio_bytes)
 
+def add_msg_to_input(text: str, wav_bytes: bytes | None = None):
+    st.session_state.transcribed_text = text
+    st.session_state.current_audio_bytes = wav_bytes
+    # Increment counter to force new widget creation
+    st.session_state.input_counter = st.session_state.get('input_counter', 0) + 1
+
+
 ###############
 # Cache Model #
 ###############
@@ -163,8 +170,9 @@ def render_audio_transcription(model) -> None:
                     st.session_state.last_audio_hash = audio_hash
                     transcript = result["text"]
                     
-                    # Add to chat history
-                    add_user_message(transcript, audio_bytes=wav_bytes)
+                    # Add to text to input area
+                    add_msg_to_input(transcript, wav_bytes)
+                    # add_user_message(transcript, audio_bytes=wav_bytes)
                     
                     success_msg.empty()  # Clear success message
                     st.rerun()  # Refresh to show the new message immediately

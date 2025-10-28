@@ -174,6 +174,34 @@ def render_custom_css():
             outline: none;
             caret-color: var(--primary-blue-light);
         }}
+
+        .stTextInput > div > div > input::placeholder {{
+            color: var(--neutral-400);
+        }}
+
+        /* Audio input button styling */
+        .stAudioInput > label {{
+            color: #495057;
+        }}
+
+        .stAudioInput > div > div > span > button > svg, 
+        .stAudioInput > div > span,
+        .stElementToolbar > div {{
+            background: transparent;
+            color: #495057;
+        }}
+
+        .stAudioInput > div > div > span:hover > button > svg {{
+            color: #3b82f6;
+        }}
+
+        .stAudioInput > div {{
+            background: white;
+            border: 2px solid var(--neutral-200);
+            border-radius: 4rem;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }}
         
         /* Button styling */
         .stButton > button {{
@@ -216,7 +244,6 @@ def render_custom_css():
             background: linear-gradient(to right, #2563eb, #3b82f6, #10b981);
             color: white;
             box-shadow: var(--shadow-xl);
-            border-radius: 0 24px 0 0;
             border-left: 1px solid rgba(37, 99, 235, 0.3);
         }}
         
@@ -320,6 +347,7 @@ def render_custom_css():
             background: rgba(255, 255, 255, 0.8);
             border-radius: 12px;
             font-weight: 600;
+            box-shadow: var(--shadow-sm);
         }}
         
         /* Main content area styling */
