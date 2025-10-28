@@ -244,4 +244,5 @@ def clear_input_and_rerun():
     st.session_state.input_counter = st.session_state.get('input_counter', 0) + 1
     st.session_state.transcribed_text = ""
     st.session_state.current_audio_bytes = None
+    st.session_state.submit_triggered = False
     st.rerun()

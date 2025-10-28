@@ -23,18 +23,6 @@ def sha1_bytes(b: bytes) -> str:
     h.update(b)
     return h.hexdigest()
 
-def add_user_message(text: str, audio_bytes: bytes | None = None):
-    # message = {"role": "user", "content": text, "audio": audio_bytes}
-    
-    # # Get current chat
-    # current_chat = get_current_chat()
-    # chat_id = current_chat['id'] if current_chat else None
-
-    # if chat_id in st.session_state.chats:
-    #     st.session_state.chats[chat_id]['messages'].append(message)
-
-    process_user_message(text, True, audio_bytes)
-
 def add_msg_to_input(text: str, wav_bytes: bytes | None = None):
     st.session_state.transcribed_text = text
     st.session_state.current_audio_bytes = wav_bytes
@@ -152,7 +140,7 @@ def render_audio_transcription(model) -> None:
         return {"text": text, "language": info.language}
     
     # Audio input component
-    audio = st.audio_input("Record audio", sample_rate=48000)
+    audio = st.audio_input("Click to talk", sample_rate=48000)
     success_msg = st.empty()
     
     # Auto-transcribe logic
@@ -172,7 +160,6 @@ def render_audio_transcription(model) -> None:
                     
                     # Add to text to input area
                     add_msg_to_input(transcript, wav_bytes)
-                    # add_user_message(transcript, audio_bytes=wav_bytes)
                     
                     success_msg.empty()  # Clear success message
                     st.rerun()  # Refresh to show the new message immediately

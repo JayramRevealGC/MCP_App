@@ -21,7 +21,7 @@ from utils.message_processing import (
 
 from utils.config import get_config
 from utils.sidebar_components import render_sidebar
-from utils.chat_utils import initialize_session_state, get_current_chat
+from utils.chat_utils import initialize_session_state, get_current_chat, handle_input_submit
 from utils.speech_utils import render_audio_transcription
 
 def main():
@@ -89,14 +89,15 @@ def render_input_area():
             placeholder="Ask about data, run queries, or request analysis...",
             key=f"user_input_{st.session_state.get('input_counter', 0)}",
             value=transcribed_text,
-            label_visibility="collapsed"
+            label_visibility="collapsed",
+            on_change=handle_input_submit
         )
     
     with col2:
         send_button = st.button("Send", use_container_width=True)
     
     # Handle message sending
-    if send_button and user_input:
+    if (send_button or st.session_state.get('submit_triggered')) and user_input:
         success = process_user_message(user_input)
         if success:
             clear_input_and_rerun()
