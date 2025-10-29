@@ -35,6 +35,11 @@ def render_custom_css():
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }}
         
+        .stElementContainer > *, 
+        .stMetric > div > * {{
+            color: #374151;
+        }}
+
         /* Main app background */
         .stApp {{
             background: #f8fafc;
@@ -202,6 +207,10 @@ def render_custom_css():
             border-radius: 4rem;
             box-shadow: var(--shadow-sm);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }}
+
+        .stAudioInput > div:hover {{
+            border-color: #3b82f6;
         }}
         
         /* Button styling */
