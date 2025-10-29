@@ -75,10 +75,14 @@ def process_mcp_request(mcp_client: MCPClient, user_input: str, current_chat: Di
     """
     tool_name = _get_mcp_tool_name()
     
-    # Call the MCP tool
+    # Call the MCP tool with session_id
     with st.spinner("Processing your request..."):
         try:
-            response = mcp_client.call_tool(tool_name, {"user_query": user_input})
+            arguments = {
+                "user_query": user_input,
+                "session_id": mcp_client.session_id
+            }
+            response = mcp_client.call_tool(tool_name, arguments)
             return handle_mcp_response(response, current_chat)
             
         except Exception as e:

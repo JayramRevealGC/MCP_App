@@ -1,7 +1,73 @@
 import json
 import openai
 
-async def parse_nl_to_intent(user_input: str) -> dict:
+async def summarize_query_history(previous_queries: list) -> str:
+    """
+    Summarize previous queries to extract key context: table names, column names, and actions.
+    
+    Args:
+        previous_queries: List of previous query strings
+        
+    Returns:
+        A summarized context string highlighting table names, columns, and key information
+    """
+    if not previous_queries:
+        return ""
+    
+    if len(previous_queries) == 1:
+        # For single query, use it directly but extract key info
+        summary_prompt = f"""Analyze the following database query and extract ONLY the key information:
+        
+Query: "{previous_queries[0]}"
+
+Extract and format:
+1. Table name(s) mentioned (if any)
+2. Column name(s) mentioned (if any)
+3. Action type (fetch records, join tables, etc.)
+4. Any filters/conditions applied
+5. Any join relationships (if applicable)
+
+Format as: "Previously worked with table(s): [table names], column(s): [column names], action: [action type], filters: [filters if any]"
+"""
+    else:
+        # For multiple queries, summarize them together
+        queries_text = "\n".join([f"Query {i+1}: {q}" for i, q in enumerate(previous_queries)])
+        summary_prompt = f"""Analyze the following database query history and extract key information:
+        
+{queries_text}
+
+Extract and summarize:
+1. ALL table names that were mentioned across all queries (consolidate and list uniquely)
+2. ALL column names that were mentioned across all queries (consolidate and list uniquely)
+3. Actions performed (join relationships, filters applied, etc.)
+4. Context about what the user was exploring (summarize the query pattern)
+
+Format as a structured summary that highlights:
+- Tables used: [list all unique table names]
+- Columns referenced: [list all unique column names]
+- Recent query pattern: [brief summary of what user was doing]
+- Join relationships: [if any joins were made, document the relationships]
+"""
+    
+    client = openai.OpenAI()
+    
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are a database query analyzer. Extract key information from queries focusing on table names, column names, and context."},
+                {"role": "user", "content": summary_prompt}
+            ],
+            temperature=0.1,
+            max_tokens=300
+        )
+        return response.choices[0].message.content.strip()
+    except Exception:
+        # Fallback: return a simple summary
+        return f"Previous queries: {len(previous_queries)} query/queries were made in this session."
+
+
+async def parse_nl_to_intent(user_input: str, previous_queries: list = None) -> dict:
     """
     Convert natural language into structured query intent.
     """
@@ -11,6 +77,31 @@ async def parse_nl_to_intent(user_input: str) -> dict:
         "action": "<one of: fetch_tables, fetch_n_records, fetch_n_joined_records, fetch_n_appended_records, get_table_summary, summarize_column, analyze_relationship>",
         "filters": {...} <optional, fill it with any parameter, if passed by user, similar to table_name, columns, n, id, table1, table2, limit, etc.>
     }
+    
+    ================================================================================
+    CONVERSATION CONTEXT - CRITICAL INSTRUCTIONS:
+    ================================================================================
+    When conversation history is provided, you MUST treat the current query as a CONTINUATION.
+    
+    TABLE NAME RESOLUTION (HIGHEST PRIORITY):
+    - If the current query mentions "that table", "the table", "same table", "previous table", etc.,
+      you MUST map it to the EXACT table name(s) from the conversation summary
+    - If the current query doesn't explicitly mention a table name, check if previous queries worked with tables
+      and use the most recent/relevant table name from the summary
+    - ALWAYS prioritize table names from the conversation summary over guessing
+    - Pay special attention to tables that were joined together - use BOTH table names when relevant
+    
+    COLUMN NAME RESOLUTION:
+    - When user says "that column", "the column", "same column", reference the exact column names from history
+    - If columns were used in previous queries, maintain consistency in column names
+    - For joins, remember which columns belong to which tables (use table prefixes: table.column when needed)
+    
+    CONTEXT AWARENESS:
+    - Previous queries establish the database context - use table/column names from the summary
+    - If user asks "show me more", "get 5 records", "filter by X", etc. without specifying table,
+      assume they mean the table(s) from the most recent query context
+    - Maintain conversation continuity - don't treat each query in isolation
+    - If previous queries involved joins, current query might reference the joined result
     
     ================================================================================
     OPERATION CATEGORIES AND EXAMPLES
@@ -176,12 +267,63 @@ async def parse_nl_to_intent(user_input: str) -> dict:
 
     client = openai.OpenAI()
     
+    # Build messages list with conversation history
+    messages = [{"role": "system", "content": system_prompt}]
+    
+    # Add previous queries as conversation history - using summarized context
+    if previous_queries:
+        # Summarize previous queries to extract key context
+        query_summary = await summarize_query_history(previous_queries)
+        
+        # Build detailed context prompt emphasizing table/column names
+        history_context = "=" * 70 + "\n"
+        history_context += "CONVERSATION CONTEXT - SUMMARY OF PREVIOUS QUERIES\n"
+        history_context += "=" * 70 + "\n\n"
+        history_context += query_summary + "\n\n"
+        
+        history_context += "-" * 70 + "\n"
+        history_context += "CRITICAL TABLE/COLUMN NAME MAPPING INSTRUCTIONS:\n"
+        history_context += "-" * 70 + "\n"
+        history_context += "1. TABLE NAMES FROM HISTORY: Use the EXACT table name(s) listed in the summary above\n"
+        history_context += "   - If current query says 'that table' or doesn't name a table, use table(s) from summary\n"
+        history_context += "   - Multiple tables from joins? Use both table names when relevant\n"
+        history_context += "   - Most recent table context takes priority if multiple tables were used\n\n"
+        
+        history_context += "2. COLUMN NAMES FROM HISTORY: Reference columns from the summary when mentioned\n"
+        history_context += "   - Maintain exact column names as they appeared in previous queries\n"
+        history_context += "   - For joins, remember table prefixes (table.column format)\n\n"
+        
+        history_context += "3. CONTEXT CONTINUITY: \n"
+        history_context += "   - Current query builds on previous query context\n"
+        history_context += "   - If query is vague (e.g., 'get 5 more', 'filter by status'), use context from summary\n"
+        history_context += "   - Previous query actions inform what the current query is likely about\n\n"
+        
+        history_context += "4. EXAMPLES OF CONTEXT RESOLUTION:\n"
+        history_context += "   - User previously queried 'item_kaus' table, now says 'get 10 from that table'\n"
+        history_context += "     → Use table_name: 'item_kaus'\n"
+        history_context += "   - User previously joined 'users' and 'orders', now says 'filter by customer_id'\n"
+        history_context += "     → Consider both tables, use table prefix if needed\n"
+        history_context += "   - User previously queried 'revenue' column, now says 'analyze that by category'\n"
+        history_context += "     → Use the exact column names from history\n"
+        history_context += "-" * 70 + "\n"
+        
+        messages.append({
+            "role": "assistant",
+            "content": history_context
+        })
+        
+        # Add current query as continuation
+        messages.append({
+            "role": "user",
+            "content": f"Current query (CONTINUING FROM ABOVE CONTEXT):\n{user_input}"
+        })
+    else:
+        # No history, just add the current query normally
+        messages.append({"role": "user", "content": user_input})
+    
     response = client.chat.completions.create(
         model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_input}
-        ],
+        messages=messages,
         temperature=0.2
     )
 
@@ -191,45 +333,3 @@ async def parse_nl_to_intent(user_input: str) -> dict:
         return json.loads(intent_text)
     except Exception:
         return {"action": "unknown", "filters": {}}
-
-async def parse_error(user_query: str, error_message: str) -> dict:
-    """
-    Parse user query and error message using LLM to provide a better-framed error message.
-    Returns a dictionary with 'content' and 'isError' keys.
-    """
-    system_prompt = """You are an error message parser and translator. Your job is to take a user's query and the technical error message that occurred, and provide a user-friendly, helpful error message that explains what went wrong and suggests how to fix it.
-
-    Guidelines:
-    1. Make the error message clear and understandable for non-technical users
-    2. Explain what the user was trying to do based on their query
-    3. Suggest specific actions they can take to resolve the issue
-    4. Be helpful and encouraging, not just technical
-    5. Keep the message concise but informative
-    6. If the error is about missing data or tables, suggest what they might be looking for
-    7. If it's a syntax or format issue, provide examples of correct usage
-
-    Return ONLY the improved error message content as plain text. Do not include any JSON formatting or additional structure."""
-
-    client = openai.OpenAI()
-    
-    user_prompt = f"""User Query: "{user_query}"
-
-Technical Error: "{error_message}"
-
-Please provide a user-friendly error message that explains what went wrong and how to fix it."""
-
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
-        ],
-        temperature=0.3
-    )
-
-    improved_error_message = response.choices[0].message.content.strip()
-    
-    return {
-        "content": improved_error_message,
-        "isError": True
-    }

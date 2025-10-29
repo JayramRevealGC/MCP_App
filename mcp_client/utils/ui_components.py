@@ -71,7 +71,7 @@ def render_custom_css():
         }}
 
         .stExpander > details[open] > summary {{
-            color: #ffffff;
+            color: #374151;
         }}
 
         details[open] > div {{
@@ -206,19 +206,18 @@ def render_custom_css():
         
         /* Button styling */
         .stButton > button {{
-            max-width: 8rem;
             width: 100%;
-            max-height: 100%;
             background: linear-gradient(to right, #2563eb, #3b82f6, #10b981);
             color: white;
             border: none;
             border-radius: 16px;
-            padding: 8% 16%;
+            padding: 14px 20px;
             font-weight: 600;
             font-size: 16px;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             box-shadow: var(--shadow-md);
             text-transform: none;
+            min-height: 56px;
         }}
         
         .stButton > button:hover {{
