@@ -22,7 +22,7 @@ from utils.message_processing import (
 from utils.config import get_config
 from utils.sidebar_components import render_sidebar
 from utils.chat_utils import initialize_session_state, get_current_chat, handle_input_submit
-from utils.speech_utils import render_audio_transcription
+from utils.speech_utils import render_audio_transcription, mic_button
 
 def main():
     """Main application function."""
@@ -51,11 +51,13 @@ def main():
     
     # Render sidebar
     speech_model = render_sidebar()
-    
+
     # Main chat interface
     render_chat_interface()
 
-    render_audio_transcription(speech_model)
+    audio_open = st.session_state.get("show_audio_input", False)
+    if audio_open:
+        render_audio_transcription(speech_model)
     
     # Footer
     render_footer()
@@ -79,11 +81,14 @@ def render_chat_interface():
 
 def render_input_area():
     """Render the input area for user messages."""
-    col1, col2 = st.columns([6, 1])
+    col1, col2, col3 = st.columns([1, 10, 3])
 
     transcribed_text = st.session_state.get("transcribed_text", "")
-    
+
     with col1:
+        mic_button()
+    
+    with col2:
         user_input = st.text_input(
             "Message",
             placeholder="Ask about data, run queries, or request analysis...",
@@ -93,8 +98,8 @@ def render_input_area():
             on_change=handle_input_submit
         )
     
-    with col2:
-        send_button = st.button("Send", use_container_width=True)
+    with col3:
+        send_button = st.button("Send", key="sendButton", use_container_width=True)
     
     # Handle message sending
     if (send_button or st.session_state.get('submit_triggered')) and user_input:

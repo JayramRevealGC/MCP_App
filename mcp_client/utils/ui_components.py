@@ -48,16 +48,15 @@ def render_custom_css():
         
         /* Header gradient */
         .main-header {{
-            background: linear-gradient(to right, #2563eb, #3b82f6, #10b981);
+            background: linear-gradient(to right, #003494 50%, #003494 65%, #CDEDF8 85%, #FFFFFF 100%);
             padding: 2rem;
-            border-radius: 0 0 0 24px;
+            border-radius: 0.5rem;
             margin: 0 0 2rem 0;
-            box-shadow: var(--shadow-xl);
             position: relative;
             overflow: hidden;
             margin-left: -1rem;
             margin-right: -1rem;
-            border: 1px solid rgba(37, 99, 235, 0.3);
+            border: transparent;
         }}
         
         .main-header::before {{
@@ -76,11 +75,17 @@ def render_custom_css():
         }}
 
         .stExpander > details[open] > summary {{
-            color: #374151;
+            background: #0089E4;
+            color: #FFFFFF;
         }}
 
         details[open] > div {{
             color: #374151;
+        }}
+
+        .stExpander > details > div {{
+            background: rgba(205, 237, 248, 0.6);
+            border-radius: 0 0 12px 12px;
         }}
 
         /* Spinner styling */
@@ -214,23 +219,22 @@ def render_custom_css():
         }}
         
         /* Button styling */
-        .stButton > button {{
+        .st-key-sendButton button {{
             width: 100%;
-            background: linear-gradient(to right, #2563eb, #3b82f6, #10b981);
+            background: linear-gradient(135deg, #FFC400 35%, #0089E4);
             color: white;
             border: none;
-            border-radius: 16px;
-            padding: 14px 20px;
+            border-radius: 100px;
+            padding: auto;
             font-weight: 600;
             font-size: 16px;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             box-shadow: var(--shadow-md);
             text-transform: none;
-            min-height: 56px;
+            max-height: 40px;
         }}
         
-        .stButton > button:hover {{
-            background: linear-gradient(to right, #1d4ed8, #2563eb, #059669);
+        .st-key-sendButton button:hover {{
             transform: translateY(-2px);
             box-shadow: var(--shadow-lg);
         }}
@@ -250,7 +254,7 @@ def render_custom_css():
         
         /* Sidebar styling - gradient theme */
         section[data-testid="stSidebar"] {{
-            background: linear-gradient(to right, #2563eb, #3b82f6, #10b981);
+            background: #003494;
             color: white;
             box-shadow: var(--shadow-xl);
             border-left: 1px solid rgba(37, 99, 235, 0.3);
@@ -342,6 +346,73 @@ def render_custom_css():
         
         section[data-testid="stSidebar"] .stAlert p {{
             color: white !important;
+        }}
+
+        section[data-testid="stSidebar"] .st-au {{
+            background: white;
+            color: #374151;
+            border-radius: 100px;
+            border: 2px solid var(--neutral-200);
+        }}
+
+        section[data-testid="stSidebar"] .st-au > div > svg {{
+            color: #374151;
+        }}
+
+        section[data-testid="stSidebar"] .st-au:focus {{
+            border-color: var(--primary-blue-light) !important;
+        }}
+
+        section[data-testid="stSidebar"] .stAlertContainer {{
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            color: white !important;
+            backdrop-filter: blur(10px);
+        }}
+
+        /* Mic button styling */
+        .st-key-micButton button {{
+            width: 40px;
+            height: 40px;
+            border-radius: 100px;
+            background: #0E334F;
+            border: none;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: auto;
+            transition: all 0.3s ease;
+        }}
+
+        .st-key-micButton button:hover {{
+            background: #1E4B7D;
+        }}
+
+        .st-key-micButton button::before {{
+                content: "🎙";
+                font-size: 24px;
+                color: white;
+                margin: 0;
+        }}
+        
+        /* Sticky input container styling */
+        #input-area-marker {{
+            display: none;
+        }}
+        
+        /* Target the parent of the marker */
+
+        .sticky-input-container {{
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            padding: 16px;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 999;
         }}
         
         /* Dataframe styling */

@@ -29,6 +29,21 @@ def add_msg_to_input(text: str, wav_bytes: bytes | None = None):
 
 
 ###############
+# MIC BUTTON #
+###############
+def mic_button():
+    if "show_audio_input" not in st.session_state:
+        st.session_state.show_audio_input = False
+    
+    clicked = st.button("", key="micButton")
+    
+    if clicked:
+        st.session_state.show_audio_input = not st.session_state.show_audio_input
+    
+    return clicked
+
+
+###############
 # Cache Model #
 ###############
 @st.cache_resource(show_spinner="Loading Whisper model…")

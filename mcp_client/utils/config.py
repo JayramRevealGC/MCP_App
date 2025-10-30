@@ -42,13 +42,13 @@ DB_INSTRUCTIONS = {
     "title": "What can you do?",
     "expanded": True,
     "instructions": [
-        "**Fetch Tables**: List all available tables in the database",
-        "**Fetch Records**: Get n records from any table with advanced filtering and sorting", 
-        "**Join Tables**: Join two tables with flexible join types",
-        "**Append Tables**: Combine two tables vertically using UNION ALL",
-        "**Table Summary**: Get comprehensive table information and statistics",
-        "**Column Summary**: Create pie charts by counting values in categorical columns",
-        "**Relationship Analysis**: Analyze relationships between categorical and quantitative columns"
+        "**🗂️ Fetch Tables**: List all available tables in the database",
+        "**📄 Fetch Records**: Get n records from any table with advanced filtering and sorting", 
+        "**🔗 Join Tables**: Join two tables with flexible join types",
+        "**➕ Append Tables**: Combine two tables vertically using UNION ALL",
+        "**📊 Table Summary**: Get comprehensive table information and statistics",
+        "**📈 Column Summary**: Create pie charts by counting values in categorical columns",
+        "**🔍 Relationship Analysis**: Analyze relationships between categorical and quantitative columns"
     ]
 }
 
