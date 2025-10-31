@@ -376,7 +376,7 @@ def render_custom_css():
             width: 40px;
             height: 40px;
             border-radius: 100px;
-            background: #0E334F;
+            background: #326DB7;
             border: none;
             padding: 0;
             display: flex;
@@ -387,7 +387,7 @@ def render_custom_css():
         }}
 
         .st-key-micButton button:hover {{
-            background: #1E4B7D;
+            background: #4B8EE1;
         }}
 
         .st-key-micButton button::before {{
