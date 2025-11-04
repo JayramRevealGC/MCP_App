@@ -16,7 +16,6 @@ from .sidebar_components import (
     render_export_options
 )
 from .message_processing import (
-    process_user_message,
     process_mcp_request,
     handle_mcp_response,
     handle_content_response,
@@ -38,7 +37,7 @@ __all__ = [
     'render_chat_history', 'render_export_options',
     
     # Message processing
-    'process_user_message', 'process_mcp_request', 'handle_mcp_response',
+    'process_mcp_request', 'handle_mcp_response',
     'handle_content_response', 'render_chat_messages', 'render_single_message',
     'clear_input_and_rerun'
 ]

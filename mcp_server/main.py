@@ -2,6 +2,7 @@ import sys
 import asyncio
 from server.core import mcp
 from server.tools import query_users
+
 async def test_query():
     """Test query_users tool directly without MCP transport."""
     user_queries = ["All the tables in the database", "10 random rows from the table item_kaus", "Row with id 1957777 from the table item_kaus", "7 joined records from the table item_kaus_original and item_kaus"]

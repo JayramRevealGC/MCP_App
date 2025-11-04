@@ -44,7 +44,3 @@ def add_message_to_chat(chat_id: str, role: str, content, audio_bytes: bytes | N
                 'content': content,
                 'audio': audio_bytes
             })
-
-def handle_input_submit():
-    """Handle Enter key press in text input"""
-    st.session_state.submit_triggered = True

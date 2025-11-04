@@ -52,23 +52,12 @@ def render_custom_css():
             padding: 2rem;
             border-radius: 0 0 0 24px;
             margin: 0 0 2rem 0;
-            box-shadow: var(--shadow-xl);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
             position: relative;
             overflow: hidden;
             margin-left: -1rem;
             margin-right: -1rem;
             border: 1px solid rgba(37, 99, 235, 0.3);
-        }}
-        
-        .main-header::before {{
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(45deg, rgba(255,255,255,0.2) 0%, transparent 50%, rgba(255,255,255,0.1) 100%);
-            pointer-events: none;
         }}
 
         .stExpander > details > summary, .stExpander > details > summary:hover, details[open] > summary:hover {{
@@ -114,8 +103,8 @@ def render_custom_css():
         
         .tagline-text {{
             color: rgba(255,255,255,0.95);
-            font-size: 32px;
-            font-weight: 700;
+            font-size: 2.5em;
+            font-weight: 800;
             margin: 0;
             line-height: 1.2;
             text-shadow: 0 1px 2px rgba(0,0,0,0.1);
@@ -185,6 +174,28 @@ def render_custom_css():
             color: var(--neutral-400);
         }}
 
+        /* Form container styling - hide border */
+        form[data-testid="stForm"] {{
+            border: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            background: transparent !important;
+        }}
+        
+        form[data-testid="stForm"] > div {{
+            border: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            background: transparent !important;
+        }}
+        
+        div[data-testid="stForm"] {{
+            border: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            background: transparent !important;
+        }}
+
         /* Audio input button styling */
         .stAudioInput > label {{
             color: #495057;
@@ -247,22 +258,37 @@ def render_custom_css():
             }}
         }}
         
-        
         /* Sidebar styling - gradient theme */
         section[data-testid="stSidebar"] {{
             background: linear-gradient(to right, #2563eb, #3b82f6, #10b981);
             color: white;
             box-shadow: var(--shadow-xl);
             border-left: 1px solid rgba(37, 99, 235, 0.3);
+            width: 300px !important;
         }}
         
+        /* Sidebar width fix for Streamlit */
+        section[data-testid="stSidebar"] > div {{
+            width: 300px !important;
+        }}
+        
+        /* Make all text white in sidebar */
         section[data-testid="stSidebar"] h1,
         section[data-testid="stSidebar"] h2,
         section[data-testid="stSidebar"] h3,
-        section[data-testid="stSidebar"] label,
-        section[data-testid="stSidebar"] p {{
+        section[data-testid="stSidebar"] h4,
+        section[data-testid="stSidebar"] h5,
+        section[data-testid="stSidebar"] h6 {{
             color: white !important;
             font-weight: 500;
+        }}
+        
+        section[data-testid="stSidebar"] label,
+        section[data-testid="stSidebar"] p,
+        section[data-testid="stSidebar"] span,
+        section[data-testid="stSidebar"] div,
+        section[data-testid="stSidebar"] * {{
+            color: white !important;
         }}
         
         /* Sidebar button styling for blue gradient background */
@@ -332,16 +358,7 @@ def render_custom_css():
             background: rgba(255, 255, 255, 0.15);
             border: 1px solid rgba(255, 255, 255, 0.3);
             border-radius: 12px;
-            color: white !important;
             backdrop-filter: blur(10px);
-        }}
-        
-        section[data-testid="stSidebar"] .stAlert > div {{
-            color: white !important;
-        }}
-        
-        section[data-testid="stSidebar"] .stAlert p {{
-            color: white !important;
         }}
         
         /* Dataframe styling */
@@ -351,12 +368,79 @@ def render_custom_css():
             box-shadow: var(--shadow-sm);
         }}
         
-        /* Expander styling */
+        /* Expander styling in main content */
         .streamlit-expanderHeader {{
             background: rgba(255, 255, 255, 0.8);
             border-radius: 12px;
             font-weight: 600;
             box-shadow: var(--shadow-sm);
+        }}
+        
+        /* Sidebar expander styling - matches gradient theme */
+        section[data-testid="stSidebar"] .streamlit-expanderHeader {{
+            background: rgba(255, 255, 255, 0.15) !important;
+            border: 1px solid rgba(255, 255, 255, 0.3) !important;
+            border-radius: 12px !important;
+            font-weight: 600 !important;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+            backdrop-filter: blur(10px) !important;
+            color: white !important;
+            padding: 12px 16px !important;
+            margin-bottom: 8px !important;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }}
+        
+        section[data-testid="stSidebar"] .streamlit-expanderHeader:hover {{
+            background: rgba(255, 255, 255, 0.25) !important;
+            border-color: rgba(255, 255, 255, 0.5) !important;
+            transform: translateY(-1px) !important;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2) !important;
+        }}
+        
+        /* Keep expander header background consistent when open */
+        section[data-testid="stSidebar"] details[open] > summary,
+        section[data-testid="stSidebar"] details[open] .streamlit-expanderHeader {{
+            background: rgba(255, 255, 255, 0.15) !important;
+            border-color: rgba(255, 255, 255, 0.3) !important;
+        }}
+        
+        section[data-testid="stSidebar"] .streamlit-expanderHeader > summary,
+        section[data-testid="stSidebar"] details > summary {{
+            color: white !important;
+        }}
+        
+        /* Override any Streamlit default backgrounds for expander content */
+        section[data-testid="stSidebar"] details[open] > div,
+        section[data-testid="stSidebar"] .streamlit-expanderContent > div,
+        section[data-testid="stSidebar"] .streamlit-expanderContent .stMarkdown,
+        section[data-testid="stSidebar"] .streamlit-expanderContent .stMarkdown > div,
+        section[data-testid="stSidebar"] .streamlit-expanderContent .element-container {{
+            background: transparent !important;
+            color: white !important;
+        }}
+        
+        /* Selectbox styling in sidebar */
+        section[data-testid="stSidebar"] .stSelectbox > label {{
+            color: white !important;
+        }}
+        
+        section[data-testid="stSidebar"] .stSelectbox > div > div {{
+            background: rgba(255, 255, 255, 0.2) !important;
+            border: 1px solid rgba(255, 255, 255, 0.3) !important;
+            border-radius: 8px !important;
+        }}
+        
+        section[data-testid="stSidebar"] .stSelectbox > div > div:hover {{
+            background: rgba(255, 255, 255, 0.3) !important;
+            border-color: rgba(255, 255, 255, 0.5) !important;
+        }}
+        
+        /* Success/Info messages text color */
+        section[data-testid="stSidebar"] .stSuccess,
+        section[data-testid="stSidebar"] .stSuccess *,
+        section[data-testid="stSidebar"] .stInfo,
+        section[data-testid="stSidebar"] .stInfo * {{
+            color: white !important;
         }}
         
         /* Main content area styling */
@@ -426,3 +510,52 @@ def render_error_message(message: str, is_timeout: bool = False):
         st.error(f"⏰ {message}")
     else:
         st.error(f"❌ {message}")
+
+def render_chat_interface():
+    """Render the main chat interface."""
+    from .chat_utils import get_current_chat
+    from .message_processing import render_chat_messages, process_pending_message_if_any
+    
+    current_chat = get_current_chat()
+    
+    # Only render chat container if we have messages
+    if current_chat and current_chat.get('messages'):
+        st.markdown('<div class="chat-container-minimal">', unsafe_allow_html=True)
+        
+        # Display chat messages
+        render_chat_messages(current_chat)
+        
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        # After showing messages, process any pending message so the user's text appears immediately before the response is fetched
+        process_pending_message_if_any()
+    
+    # Input area (always render if we have a current chat)
+    if current_chat:
+        render_input_area()
+
+def render_input_area():
+    """Render the input area for user messages."""
+    from .message_processing import queue_user_message, clear_input_and_rerun
+    
+    with st.form("chat_form", clear_on_submit=True):
+        col1, col2 = st.columns([6, 1])
+        
+        transcribed_text = st.session_state.get("transcribed_text", "")
+        
+        with col1:
+            user_input = st.text_input(
+                "Message",
+                placeholder="Ask about data, run queries, or request analysis...",
+                key=f"user_input_{st.session_state.get('input_counter', 0)}",
+                value=transcribed_text,
+                label_visibility="collapsed"
+            )
+        
+        with col2:
+            send_button = st.form_submit_button("Send", use_container_width=True)
+        
+        # Handle message sending: queue and rerun to show immediately
+        if send_button and user_input:
+            if queue_user_message(user_input):
+                clear_input_and_rerun()

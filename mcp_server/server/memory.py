@@ -1,97 +1,71 @@
 """
-Memory storage module for session-based query retention.
-Stores user queries per session to enable conversation context.
+Memory storage module for session-based default parameters.
+Stores default ent_id and company_name per session.
 """
 
-from typing import Dict, List, Any
+from typing import Dict, Any
 from datetime import datetime, timedelta
 
-# In-memory storage: {session_id: [query_history]}
-_session_memory: Dict[str, List[Dict[str, Any]]] = {}
+# Default parameters per session: {session_id: {"ent_id": "...", "company_name": "..."}}
+_default_parameters: Dict[str, Dict[str, Any]] = {}
 
 # Optional: session expiration time (24 hours)
 _SESSION_EXPIRY = timedelta(hours=24)
 _session_timestamps: Dict[str, datetime] = {}
 
-def store_query(session_id: str, query: str) -> None:
+def get_default_parameters(session_id: str) -> Dict[str, Any]:
     """
-    Store a user query for a given session.
+    Get default parameters (ent_id, company_name) for a session.
     
     Args:
         session_id: The session identifier
-        query: The user query to store
+        
+    Returns:
+        Dictionary with default parameters (may contain "ent_id" and/or "company_name")
+    """
+    if not session_id or session_id not in _default_parameters:
+        return {}
+    
+    _cleanup_expired_sessions()
+    return _default_parameters.get(session_id, {}).copy()
+
+
+def update_default_parameters(session_id: str, parameters: Dict[str, Any]) -> None:
+    """
+    Update default parameters for a session with new values.
+    Only updates ent_id and company_name if they are present in parameters.
+    
+    Args:
+        session_id: The session identifier
+        parameters: Dictionary containing "ent_id" and/or "company_name" to update
     """
     if not session_id:
         return
     
     # Initialize session if it doesn't exist
-    if session_id not in _session_memory:
-        _session_memory[session_id] = []
+    if session_id not in _default_parameters:
+        _default_parameters[session_id] = {}
     
-    # Store the query with timestamp
-    _session_memory[session_id].append({
-        "query": query,
-        "timestamp": datetime.now().isoformat()
-    })
+    # Update only if the parameter is provided
+    if "ent_id" in parameters and parameters["ent_id"]:
+        _default_parameters[session_id]["ent_id"] = parameters["ent_id"]
+    
+    if "company_name" in parameters and parameters["company_name"]:
+        _default_parameters[session_id]["company_name"] = parameters["company_name"]
     
     # Update session timestamp
     _session_timestamps[session_id] = datetime.now()
 
-def get_query_history(session_id: str, max_queries: int = None) -> List[str]:
-    """
-    Retrieve previous queries for a session.
-    
-    Args:
-        session_id: The session identifier
-        max_queries: Optional limit on number of queries to return (most recent)
-        
-    Returns:
-        List of previous queries (most recent last)
-    """
-    if not session_id or session_id not in _session_memory:
-        return []
-    
-    # Clean up expired sessions
-    _cleanup_expired_sessions()
-    
-    queries = _session_memory.get(session_id, [])
-    
-    # Extract just the query strings
-    query_strings = [q["query"] for q in queries]
-    
-    # Return most recent queries if limit specified
-    if max_queries:
-        return query_strings[-max_queries:]
-    
-    return query_strings
-
-
-def get_full_history(session_id: str) -> List[Dict[str, Any]]:
-    """
-    Get full query history with metadata for a session.
-    
-    Args:
-        session_id: The session identifier
-        
-    Returns:
-        List of query dictionaries with metadata
-    """
-    if not session_id or session_id not in _session_memory:
-        return []
-    
-    _cleanup_expired_sessions()
-    return _session_memory.get(session_id, [])
-
 
 def clear_session(session_id: str) -> None:
     """
-    Clear all queries for a session.
+    Clear default parameters for a session.
     
     Args:
         session_id: The session identifier to clear
     """
-    if session_id in _session_memory:
-        del _session_memory[session_id]
+    if session_id in _default_parameters:
+        del _default_parameters[session_id]
     if session_id in _session_timestamps:
         del _session_timestamps[session_id]
 
@@ -106,7 +80,7 @@ def _cleanup_expired_sessions() -> None:
     ]
     
     for session_id in expired_sessions:
-        if session_id in _session_memory:
-            del _session_memory[session_id]
+        if session_id in _default_parameters:
+            del _default_parameters[session_id]
         if session_id in _session_timestamps:
             del _session_timestamps[session_id]

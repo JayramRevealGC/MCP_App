@@ -6,15 +6,16 @@
 3. [Database Layer Components](#database-layer-components)
 4. [Query Execution Process](#query-execution-process)
 5. [MCP API Endpoints](#mcp-api-endpoints)
-6. [Error Handling & Timeout Management](#error-handling--timeout-management)
-7. [Deployment & Configuration](#deployment--configuration)
-8. [Process Flow Diagrams](#process-flow-diagrams)
+6. [Session Memory Management](#session-memory-management)
+7. [Error Handling & Timeout Management](#error-handling--timeout-management)
+8. [Deployment & Configuration](#deployment--configuration)
+9. [Process Flow Diagrams](#process-flow-diagrams)
 
 ---
 
 ## Architecture Overview
 
-The MCP (Model Context Protocol) Server is a sophisticated natural language to database query system that enables users to interact with databases using conversational language. The system is built using FastMCP and provides a RESTful API interface for database operations.
+The MCP (Model Context Protocol) Server is a domain-specific natural language to database query system designed for enterprise and company data operations in the AIES (Annual Integrated Economic Survey) database. The system enables users to interact with complex enterprise data using conversational language, with built-in support for session-based context management.
 
 ### Core Components
 
@@ -33,20 +34,22 @@ The MCP (Model Context Protocol) Server is a sophisticated natural language to d
 
 ### System Architecture Layers
 
-1. **Presentation Layer**: Streamlit-based web interface
-2. **API Layer**: FastMCP server with HTTP transport
-3. **Processing Layer**: NLP intent parsing and query building
-4. **Data Access Layer**: Database connection and execution
-5. **Storage Layer**: PostgreSQL database
+1. **Presentation Layer**: Streamlit-based web interface with session management
+2. **API Layer**: FastMCP server with HTTP transport and session support
+3. **NLP Processing Layer**: Intent parsing with 6 specific query types for enterprise data
+4. **Query Building Layer**: AIES-specific SQL construction with complex join patterns
+5. **Data Access Layer**: Database connection and execution with timeout protection
+6. **Storage Layer**: PostgreSQL AIES database with multiple schemas (space_meta, space_product_aies)
 
 ### Key Features
 
-- **Natural Language Processing**: Converts user queries into structured database operations
-- **Multiple Query Types**: Supports tables, records, joins, unions, summaries, and analytics
-- **Advanced Filtering**: Complex WHERE conditions with multiple operators
-- **Data Visualization**: Built-in support for charts and graphs
-- **Timeout Protection**: Prevents long-running queries from blocking the system
-- **Error Handling**: Comprehensive validation and error reporting
+- **Domain-Specific Queries**: 6 specialized query types for enterprise/company data operations
+- **Session-Based Context**: Remembers enterprise ID and company name across queries
+- **Natural Language Processing**: Converts user queries into structured intents using GPT-4o-mini
+- **Complex Join Patterns**: Handles multi-table joins across AIES database schemas
+- **Flexible Filtering**: Supports enterprise ID, company name, dates, and variable comparisons
+- **Timeout Protection**: Prevents long-running queries from blocking the system (60-second timeout)
+- **Comprehensive Error Handling**: Validation, error reporting, and SQL query logging
 
 ---
 
@@ -54,74 +57,122 @@ The MCP (Model Context Protocol) Server is a sophisticated natural language to d
 
 ### Overview
 
-The NLP intent processing system converts natural language queries into structured JSON intents that can be executed against the database. This process uses OpenAI's GPT-4o-mini model to understand user intent and map it to specific database operations.
+The NLP intent processing system converts natural language queries into structured JSON intents specifically designed for enterprise and company data operations in the AIES database. This process uses OpenAI's GPT-4o-mini model to understand user intent and map it to one of 6 supported query types.
 
 ### Process Flow
 
 ```
 User Query → OpenAI API → Intent JSON → Database Action → Results
+     ↓
+Session Memory (default ent_id/company_name)
 ```
 
-### Intent Parser (`nlp_intent.py`)
+### Intent Parser (`nlp_layer.py`)
 
-**Function**: `parse_nl_to_intent(user_input: str) -> dict`
+**Function**: `parse_nl_to_intent(user_input: str, default_parameters: dict = None) -> dict`
 
 **Process**:
 1. **Input Processing**: Receives natural language query from user
-2. **System Prompt**: Uses comprehensive prompt with examples for all supported operations
-3. **AI Processing**: Sends query to OpenAI GPT-4o-mini model
-4. **Response Parsing**: Converts AI response to structured JSON
-5. **Error Handling**: Returns fallback intent if parsing fails
+2. **Default Parameters**: Applies session-based default enterprise ID or company name if not specified
+3. **System Prompt**: Uses comprehensive prompt with examples for all 6 supported operations
+4. **AI Processing**: Sends query to OpenAI GPT-4o-mini model with JSON response format
+5. **Response Parsing**: Converts AI response to structured JSON intent
+6. **Parameter Application**: Applies default parameters if missing from parsed intent
+7. **Error Handling**: Returns fallback intent ("unknown") if parsing fails
 
 **Supported Operations**:
 
 | Operation | Description | Example Query |
 |-----------|-------------|---------------|
-| `fetch_tables` | List all available tables | "Show me all tables" |
-| `fetch_n_records` | Get records from single table | "Get 5 users where age > 25" |
-| `fetch_n_joined_records` | Join two tables | "Join users and orders" |
-| `fetch_n_appended_records` | Union two tables | "Combine users and customers" |
-| `get_table_summary` | Table metadata and stats | "Summary of products table" |
-| `summarize_column` | Column value distribution | "Count values in status column" |
-| `analyze_relationship` | Categorical vs quantitative analysis | "Revenue by category" |
+| `fetch_data` | Fetch data for enterprise/company (all fields or specific variables) | "Show me all data for enterprise 000" |
+| `compare_variables` | Compare two variables with percentage difference threshold | "Show x values where x differs from y by more than 20% for company ABC" |
+| `filter_by_date` | Get companies that submitted on a specific date | "What companies submitted on 2023-09-20" |
+| `count_units_kaus` | Count units and KAUs for a company/enterprise | "How many units and KAUs for enterprise 000" |
+| `count_enterprises` | Count unique enterprises in the database | "How many unique enterprises are there" |
+| `get_company_name` | Get company name for a specific enterprise ID | "What is the company name for enterprise 000" |
+| `unknown` | Queries that don't match any supported type | Any unsupported operation |
 
 ### Intent Structure
 
+#### Fetch Data Intent
 ```json
 {
-    "action": "fetch_n_records",
+    "action": "fetch_data",
     "filters": {
-        "table_name": "users",
-        "n": 5,
-        "columns": ["id", "name", "email"],
-        "condition": {
-            "column": "age",
-            "operator": ">",
-            "value": 25
-        },
-        "order_by": {
-            "column": "name",
-            "direction": "ASC"
-        }
+        "variables": ["revenue", "profit"],  // Optional: specific fields to fetch
+        "ent_id": "000"  // OR "company_name": "ABC Corp"
     }
 }
 ```
 
-### Supported Operators
+#### Compare Variables Intent
+```json
+{
+    "action": "compare_variables",
+    "filters": {
+        "variable_x": "revenue",
+        "variable_y": "profit",
+        "percentage_threshold": 0.2,  // 20% difference
+        "company_name": "ABC Corp"  // OR "ent_id": "000"
+    }
+}
+```
 
-- **Comparison**: `=`, `>`, `<`, `>=`, `<=`, `!=`
-- **Pattern Matching**: `LIKE`, `ILIKE`
-- **Range**: `BETWEEN`
-- **Set Membership**: `IN`
-- **Null Checks**: `IS NULL`, `IS NOT NULL`
+#### Filter by Date Intent
+```json
+{
+    "action": "filter_by_date",
+    "filters": {
+        "submit_date": "2023-09-20"  // YYYY-MM-DD format
+    }
+}
+```
 
-### Advanced Features
+#### Count Units/KAUs Intent
+```json
+{
+    "action": "count_units_kaus",
+    "filters": {
+        "ent_id": "000"  // OR "company_name": "ABC Corp"
+    }
+}
+```
 
-- **Table Prefixes**: Support for `table.column` syntax in joins
-- **Flexible Joins**: INNER, LEFT, RIGHT, FULL OUTER joins
-- **Dynamic Columns**: Automatic column detection and validation
-- **Ordering**: ASC/DESC sorting on any column
-- **Limits**: Configurable result set sizes
+#### Count Enterprises Intent
+```json
+{
+    "action": "count_enterprises",
+    "filters": {}
+}
+```
+
+#### Get Company Name Intent
+```json
+{
+    "action": "get_company_name",
+    "filters": {
+        "ent_id": "000"
+    }
+}
+```
+
+### Session-Based Default Parameters
+
+The system supports session-based memory for default parameters:
+
+- **Default Enterprise ID**: Once set, subsequent queries can omit `ent_id` specification
+- **Default Company Name**: Once set, subsequent queries can omit `company_name` specification
+- **Priority**: If both `ent_id` and `company_name` are available, `ent_id` takes precedence
+- **Session Expiry**: Sessions expire after 24 hours of inactivity
+- **Automatic Updates**: Default parameters are updated when new `ent_id` or `company_name` values are found in queries
+
+### Key Features
+
+- **Flexible Field Selection**: Fetch all fields or specify specific variables
+- **Enterprise ID Priority**: When both `ent_id` and `company_name` are provided, `ent_id` is preferred
+- **Date Format Conversion**: Automatically converts dates to YYYY-MM-DD format
+- **Percentage Conversion**: Converts percentage thresholds to decimal (20% → 0.2)
+- **Unknown Query Handling**: Returns "unknown" action for unsupported queries with helpful error messages
 
 ---
 
@@ -129,7 +180,7 @@ User Query → OpenAI API → Intent JSON → Database Action → Results
 
 ### Overview
 
-The database layer provides a robust, secure, and efficient interface to PostgreSQL databases. It consists of multiple specialized modules working together to handle database operations safely.
+The database layer provides a robust, secure, and efficient interface to the AIES (Annual Integrated Economic Survey) PostgreSQL database. It consists of specialized modules working together to handle enterprise and company data operations safely, with support for complex multi-table joins across multiple schemas.
 
 ### Component Architecture
 
@@ -139,9 +190,7 @@ The database layer provides a robust, secure, and efficient interface to Postgre
 ├─────────────────┤
 │   Query Builder │ ← SQL construction
 ├─────────────────┤
-│   Validation    │ ← Input validation
-├─────────────────┤
-│   Connection    │ ← Database connectivity
+│   Connection    │ ← Database connectivity & timeout
 └─────────────────┘
 ```
 
@@ -151,12 +200,12 @@ The database layer provides a robust, secure, and efficient interface to Postgre
 
 **Key Functions**:
 - `get_connection()`: Establishes PostgreSQL connection using environment variables
-- `execute_with_timeout()`: Executes functions with 30-second timeout protection
+- `execute_with_timeout()`: Executes functions with 60-second timeout protection using threading
 - `QueryTimeoutError`: Custom exception for timeout scenarios
 
 **Configuration**:
 ```python
-QUERY_TIMEOUT = 30  # seconds
+QUERY_TIMEOUT = 60  # seconds
 ```
 
 **Environment Variables**:
@@ -168,63 +217,103 @@ QUERY_TIMEOUT = 30  # seconds
 
 ### 2. Query Builder (`query_builder.py`)
 
-**Purpose**: Constructs SQL queries from structured intents
+**Purpose**: Constructs AIES-specific SQL queries from structured intents
 
-**Key Functions**:
-- `format_columns_for_sql()`: Formats column lists for SELECT statements
-- `format_join_condition()`: Creates JOIN conditions
-- `ACTION_SQL_MAP`: Maps actions to SQL templates
+**Key Features**:
+- **Base Join Pattern**: Pre-configured complex join pattern across multiple schemas
+- **Company Name Subqueries**: Efficient subquery pattern for company name filtering
+- **Variable Selection**: Supports fetching all fields or specific variables
+- **Enterprise ID Priority**: Prioritizes `ent_id` over `company_name` when both are provided
 
-**SQL Templates**:
-```python
-ACTION_SQL_MAP = {
-    "fetch_tables": "SELECT table_name FROM information_schema.tables WHERE table_schema = 'space_product_aies';",
-    "fetch_n_records": "SELECT {} FROM space_product_aies.{}{}{} LIMIT %s;",
-    "fetch_n_joined_records": "SELECT {} FROM space_product_aies.{} {} JOIN space_product_aies.{} ON {}{}{} LIMIT %s;",
-    "fetch_n_appended_records": "SELECT {} FROM space_product_aies.{}{} UNION ALL SELECT {} FROM space_product_aies.{}{}{} LIMIT %s;",
-    "get_table_summary": "SELECT COUNT(*) as row_count FROM space_product_aies.{};",
-    "summarize_column": "SELECT {}, COUNT(*) as count FROM space_product_aies.{} GROUP BY {} ORDER BY count DESC;",
-    "analyze_relationship": "SELECT {} as {}, SUM({}) as {} FROM space_product_aies.{} GROUP BY {} ORDER BY {} DESC;"
-}
-```
+**Base Join Pattern**:
+The system uses a standardized join pattern across multiple schemas:
+- `space_meta.units` (a)
+- `space_meta.product_refper_units` (b)
+- `space_meta.product_refpers` (c)
+- `space_meta.products` (d)
+- `space_meta.refpers` (e)
+- `space_product_aies.control_estabs` (f)
+- `space_product_aies.item_estabs` (g)
+
+**Query Builder Functions**:
+
+#### `build_fetch_data_query(variables, company_name, ent_id)`
+- Fetches all fields or specific variables for an enterprise/company
+- Supports filtering by `ent_id` or `company_name`
+- Uses subquery pattern for company name filtering
+
+#### `build_compare_variables_query(variable_x, variable_y, percentage_threshold, company_name, ent_id)`
+- Compares two variables with percentage difference threshold
+- Uses ABS() and NULLIF() for safe percentage calculations
+- Filters by enterprise or company
+
+#### `build_filter_by_date_query(submit_date)`
+- Finds companies that submitted on a specific date
+- Uses subquery pattern to filter by `submit_date` in `control_contacts` table
+
+#### `build_count_units_kaus_query(company_name, ent_id)`
+- Counts distinct `reporting_id` (units) and `kau_id` (KAUs)
+- Supports filtering by enterprise or company
+
+#### `build_count_enterprises_query()`
+- Counts distinct `ent_id` values across the database
+- No filtering required
+
+#### `build_get_company_name_query(ent_id)`
+- Retrieves company name from `control_contacts` table
+- Uses different join pattern optimized for company name lookup
 
 ### 3. Validation (`validation.py`)
 
-**Purpose**: Validates database inputs to prevent SQL injection and ensure data integrity
+**Purpose**: Provides validation utilities for database operations (currently minimal usage in AIES architecture)
 
 **Key Functions**:
+- `validate_columns()`: Validates column existence in tables
+- `validate_join_columns()`: Validates join column existence
+- `validate_order_by()`: Validates ORDER BY clauses
+- `parse_condition()`: Parses flexible condition dictionaries
 
-#### `validate_columns(table_name, columns)`
-- Validates column existence in specified table
-- Returns all columns if validation fails
-- Prevents SQL injection through column name validation
+**Note**: The current AIES architecture uses pre-defined query patterns, so validation is primarily handled through query builder logic rather than generic validation functions.
 
-#### `validate_join_columns(table1, table2, join_columns)`
-- Validates join column existence in both tables
-- Returns validated column names
-- Raises ValueError for invalid columns
+### SQL Query Examples
 
-#### `validate_join_type(join_type)`
-- Validates and normalizes join types
-- Supported: INNER, LEFT, RIGHT, FULL, FULL OUTER
-- Returns uppercase normalized type
+#### Fetch Data Query (All Fields)
+```sql
+SELECT a.reporting_id, a.kau_id, a.login_id, a.ent_id, f.*, g.*
+FROM space_meta.units a
+INNER JOIN space_meta.product_refper_units b ON a.sscid = b.sscid
+INNER JOIN space_meta.product_refpers c ON b.product_refper_id = c.id
+INNER JOIN space_meta.products d ON d.id = c.product_id
+INNER JOIN space_meta.refpers e ON e.id = c.refper_id
+INNER JOIN space_product_aies.control_estabs f ON f.product_refper_unit_id = b.id
+INNER JOIN space_product_aies.item_estabs g ON g.product_refper_unit_id = b.id
+WHERE d.name = 'AIES'
+  AND e.name = '2023'
+  AND a.ent_id = %s
+```
 
-#### `validate_order_by(table_name, order_by)`
-- Validates ORDER BY clauses
-- Checks column existence and sort direction
-- Supports table-prefixed column names
+#### Compare Variables Query
+```sql
+SELECT revenue, profit
+FROM space_meta.units a
+INNER JOIN space_meta.product_refper_units b ON a.sscid = b.sscid
+INNER JOIN space_meta.product_refpers c ON b.product_refper_id = c.id
+INNER JOIN space_meta.products d ON d.id = c.product_id
+INNER JOIN space_meta.refpers e ON e.id = c.refper_id
+INNER JOIN space_product_aies.control_estabs f ON f.product_refper_unit_id = b.id
+INNER JOIN space_product_aies.item_estabs g ON g.product_refper_unit_id = b.id
+WHERE d.name = 'AIES'
+  AND e.name = '2023'
+  AND a.ent_id = %s
+  AND ABS(revenue - profit) / NULLIF(profit, 0) > %s
+```
 
-#### `parse_condition(condition, table_name)`
-- Parses flexible condition dictionaries
-- Supports all SQL operators
-- Returns SQL WHERE clause and parameters
-- Prevents SQL injection through parameterized queries
+### Security Features
 
-**Security Features**:
-- Column name validation against database schema
-- Parameterized queries for all user inputs
-- Table name validation
-- Operator whitelisting
+- **Parameterized Queries**: All user inputs use parameterized queries (`%s` placeholders)
+- **SQL Injection Prevention**: No direct string concatenation in SQL construction
+- **Schema-Specific Queries**: Queries are scoped to specific schemas (`space_meta`, `space_product_aies`)
+- **Timeout Protection**: 60-second query timeout prevents resource exhaustion
 
 ---
 
@@ -232,12 +321,12 @@ ACTION_SQL_MAP = {
 
 ### Overview
 
-The query execution process coordinates all database operations, from intent parsing to result delivery. It ensures security, performance, and reliability through comprehensive validation and error handling.
+The query execution process coordinates all database operations, from intent parsing to result delivery. It ensures security, performance, and reliability through comprehensive validation, error handling, and SQL query logging.
 
 ### Execution Flow
 
 ```
-Intent → Validation → SQL Construction → Execution → Result Processing → Response
+Intent → Action Routing → SQL Construction → Validation → Execution → Result Processing → Response
 ```
 
 ### Main Executor (`executor.py`)
@@ -246,129 +335,217 @@ Intent → Validation → SQL Construction → Execution → Result Processing �
 
 **Process Steps**:
 
-1. **Connection Establishment**
+1. **Action Validation**
+   - Handles "unknown" action without database connection
+   - Returns helpful error message for unsupported queries
+
+2. **SQL Query Construction**
+   - Builds SQL query using query builder functions
+   - Captures SQL and parameters for logging and error reporting
+   - Handles build errors gracefully
+
+3. **Connection Establishment**
    - Creates database connection using `get_connection()`
    - Sets up cursor with dictionary row factory
    - Implements connection cleanup in finally block
 
-2. **Action Routing**
-   - Routes to appropriate handler based on action type
-   - Each action has specialized processing logic
+4. **Query Execution**
+   - Executes SQL with timeout protection (60 seconds)
+   - Handles result processing based on action type
+   - Returns formatted results with SQL query information
 
-3. **Query Execution**
-   - Constructs SQL using query builder
-   - Executes with timeout protection
-   - Handles result processing
-
-4. **Error Handling**
+5. **Error Handling**
    - Catches and formats database errors
-   - Returns structured error responses
-   - Implements timeout protection
+   - Includes SQL query in error responses for debugging
+   - Implements timeout protection with detailed error messages
 
 ### Action-Specific Processing
 
-#### 1. Fetch Tables (`fetch_tables`)
-```python
-sql = ACTION_SQL_MAP[action]
-cur.execute(sql)
-rows = cur.fetchall()
-return [dict(row) for row in rows]
+#### 1. Fetch Data (`fetch_data`)
+**Process**:
+1. Extract variables list (optional - if empty or None, fetch all fields)
+2. Extract enterprise ID or company name (priority: ent_id > company_name)
+3. Validate that at least one identifier is provided
+4. Build SQL query using `build_fetch_data_query()`
+5. Execute query and return all results
+
+**Features**:
+- Flexible field selection (all fields or specific variables)
+- Supports filtering by enterprise ID or company name
+- Enterprise ID takes precedence when both are provided
+
+**Result Format**:
+```json
+[
+    {
+        "reporting_id": "...",
+        "kau_id": "...",
+        "ent_id": "...",
+        "variable1": value1,
+        "variable2": value2,
+        ...
+        "sql_query": "...",
+        "sql_params": [...]
+    }
+]
 ```
 
-#### 2. Fetch Records (`fetch_n_records`)
+#### 2. Compare Variables (`compare_variables`)
 **Process**:
-1. Extract table name, limit, and columns from filters
-2. Parse conditions (WHERE clause)
-3. Parse ordering (ORDER BY clause)
-4. Validate columns against database schema
-5. Construct parameterized SQL query
-6. Execute with condition parameters and limit
-7. Return formatted results
+1. Extract variable_x, variable_y, and percentage_threshold
+2. Extract company filter (ent_id or company_name)
+3. Validate all required parameters are present
+4. Build SQL query with percentage difference calculation
+5. Execute query and return comparison results
 
 **Features**:
-- Dynamic column selection
-- Complex WHERE conditions
-- Flexible ordering
-- Configurable limits
+- Percentage difference calculation using ABS() and NULLIF()
+- Safe division handling (prevents division by zero)
+- Filters by enterprise or company
 
-#### 3. Join Records (`fetch_n_joined_records`)
+**Result Format**:
+```json
+[
+    {
+        "variable_x": value1,
+        "variable_y": value2,
+        "sql_query": "...",
+        "sql_params": [...]
+    }
+]
+```
+
+#### 3. Filter by Date (`filter_by_date`)
 **Process**:
-1. Validate table names and join columns
-2. Determine join type (INNER, LEFT, RIGHT, FULL OUTER)
-3. Handle table-prefixed column names
-4. Parse conditions and ordering
-5. Construct JOIN query with proper aliasing
-6. Execute and return results
-
-**Advanced Features**:
-- Flexible join column mapping
-- Table prefix resolution
-- Cross-table condition support
-- Automatic column prefixing
-
-#### 4. Append Records (`fetch_n_appended_records`)
-**Process**:
-1. Validate table names
-2. Find common columns between tables
-3. Parse conditions and ordering
-4. Construct UNION ALL query
-5. Execute with proper column alignment
-6. Return combined results
+1. Extract submit_date from filters
+2. Validate date format (YYYY-MM-DD)
+3. Build SQL query using subquery pattern
+4. Execute query and return enterprise IDs
 
 **Features**:
-- Automatic common column detection
-- Column alignment validation
-- Cross-table condition support
+- Date-based filtering using submit_date field
+- Efficient subquery pattern for company identification
 
-#### 5. Table Summary (`get_table_summary`)
+**Result Format**:
+```json
+[
+    {
+        "ent_id": "...",
+        "sql_query": "...",
+        "sql_params": [...]
+    }
+]
+```
+
+#### 4. Count Units/KAUs (`count_units_kaus`)
 **Process**:
-1. Get row count using COUNT(*)
-2. Retrieve column information from information_schema
-3. Fetch sample data (first 3 rows)
-4. Return comprehensive table metadata
-
-**Returns**:
-- Table name
-- Row count
-- Column count and names
-- Sample data rows
-
-#### 6. Column Summary (`summarize_column`)
-**Process**:
-1. Validate column existence
-2. Execute GROUP BY query with COUNT
-3. Create visualization configuration
-4. Return data and chart metadata
-
-**Visualization Support**:
-- Bar chart configuration
-- Title and field mapping
-- Data formatting for frontend
-
-#### 7. Relationship Analysis (`analyze_relationship`)
-**Process**:
-1. Validate categorical and quantitative columns
-2. Execute GROUP BY with SUM aggregation
-3. Create histogram visualization configuration
-4. Return analysis data and chart metadata
+1. Extract enterprise ID or company name
+2. Validate that at least one identifier is provided
+3. Build SQL query with COUNT(DISTINCT) aggregations
+4. Execute query and return single row with counts
 
 **Features**:
-- Categorical vs quantitative analysis
-- Histogram visualization support
-- Statistical aggregation
+- Counts distinct reporting IDs (units)
+- Counts distinct KAU IDs (KAUs)
+- Supports filtering by enterprise or company
+
+**Result Format**:
+```json
+[
+    {
+        "Reporting_IDs": 123,
+        "KAUs": 45,
+        "sql_query": "...",
+        "sql_params": [...]
+    }
+]
+```
+
+#### 5. Count Enterprises (`count_enterprises`)
+**Process**:
+1. Build SQL query with COUNT(DISTINCT ent_id)
+2. Execute query and return single row with count
+
+**Features**:
+- Counts unique enterprises across entire database
+- No filtering required
+
+**Result Format**:
+```json
+[
+    {
+        "Enterprises": 5678,
+        "sql_query": "...",
+        "sql_params": []
+    }
+]
+```
+
+#### 6. Get Company Name (`get_company_name`)
+**Process**:
+1. Extract enterprise ID from filters
+2. Validate enterprise ID is provided
+3. Build SQL query using optimized join pattern
+4. Execute query and return company name
+
+**Features**:
+- Optimized query pattern for company name lookup
+- Uses different join pattern (control_contacts instead of control_estabs)
+
+**Result Format**:
+```json
+[
+    {
+        "mail_addr_name1_txt": "Company Name",
+        "sql_query": "...",
+        "sql_params": [...]
+    }
+]
+```
+
+#### 7. Unknown Action (`unknown`)
+**Process**:
+1. Returns error message without database connection
+2. No SQL query executed
+
+**Result Format**:
+```json
+[
+    {
+        "message": "I'm sorry, but your query doesn't match any of the supported query types.",
+        "action": "unknown",
+        "sql_query": null,
+        "sql_params": []
+    }
+]
+```
+
+### SQL Query Logging
+
+All query results include SQL query information for debugging and transparency:
+
+- **sql_query**: Formatted SQL query with parameter values (for display)
+- **sql_params**: List of parameter values used in query
+
+This allows users and developers to:
+- Understand what SQL was executed
+- Debug query issues
+- Verify query correctness
+- Optimize queries if needed
 
 ### Timeout Protection
 
 **Implementation**:
-- 30-second query timeout using threading
+- 60-second query timeout using threading
 - `execute_with_timeout()` wrapper function
 - `QueryTimeoutError` exception handling
-- Graceful timeout response
+- Graceful timeout response with SQL query information
 
 **Benefits**:
 - Prevents system blocking
 - Protects against runaway queries
 - Maintains system responsiveness
+- Provides detailed error information including SQL
 
 ---
 
@@ -376,50 +553,61 @@ return [dict(row) for row in rows]
 
 ### Overview
 
-The MCP server exposes a single tool endpoint that handles all database operations through natural language processing.
+The MCP server exposes a single tool endpoint that handles all enterprise and company data operations through natural language processing with session-based context management.
 
 ### API Structure
 
 **Base URL**: `http://host:8001/mcp`
 **Transport**: Streamable HTTP
 **Protocol**: Model Context Protocol (MCP)
+**Session Support**: Yes (via `mcp-session-id` header)
 
 ### Available Tools
 
-#### `query_users(user_query: str) -> dict`
+#### `query_users(user_query: str, session_id: str = None) -> dict`
 
-**Description**: Main entry point for all database operations
+**Description**: Main entry point for all database operations with session support
 
 **Parameters**:
 - `user_query` (str): Natural language query describing the desired database operation
+- `session_id` (str, optional): Session identifier for context management
 
 **Returns**:
 ```json
 {
     "result": [
         // Array of database results or error objects
+        // Each result includes sql_query and sql_params fields
     ]
 }
 ```
 
 **Process Flow**:
-1. **Intent Parsing**: Convert natural language to structured intent
-2. **Action Execution**: Execute database operation based on intent
-3. **Result Formatting**: Return structured results
+1. **Session Initialization**: Retrieves default parameters for session (if provided)
+2. **Intent Parsing**: Convert natural language to structured intent with default parameters
+3. **Session Update**: Updates session memory with new enterprise ID/company name if found
+4. **Action Execution**: Execute database operation based on intent
+5. **Result Formatting**: Return structured results with SQL query information
 
 **Example Usage**:
 ```python
-# List all tables
-result = await query_users("Show me all tables")
+# Fetch data for enterprise
+result = await query_users("Show me all data for enterprise 000", session_id="session_123")
 
-# Get specific records
-result = await query_users("Get 5 users where age > 25")
+# Subsequent query uses default enterprise ID
+result = await query_users("Count units and KAUs", session_id="session_123")
 
-# Join tables
-result = await query_users("Join users and orders on user_id")
+# Compare variables
+result = await query_users("Show revenue values where revenue differs from profit by more than 20% for company ABC", session_id="session_123")
 
-# Analyze data
-result = await query_users("Show revenue by category")
+# Filter by date
+result = await query_users("What companies submitted on 2023-09-20")
+
+# Count enterprises
+result = await query_users("How many unique enterprises are there")
+
+# Get company name
+result = await query_users("What is the company name for enterprise 000")
 ```
 
 ### Server Configuration
@@ -432,11 +620,126 @@ mcp = FastMCP("nlp-db-server", host="0.0.0.0", port=8001)
 **Tool Registration** (`tools.py`):
 ```python
 @mcp.tool()
-async def query_users(user_query: str) -> dict:
-    intent = await parse_nl_to_intent(user_query)
+async def query_users(user_query: str, session_id: str = None) -> dict:
+    default_params = get_default_parameters(session_id) if session_id else {}
+    intent = await parse_nl_to_intent(user_query, default_params)
+    
+    if session_id:
+        # Update session memory with new parameters
+        update_default_parameters(session_id, intent.get("filters", {}))
+    
     result = execute_action(intent["action"], intent.get("filters", {}))
     return {"result": result}
 ```
+
+### Session Management
+
+**Session ID**: Passed as parameter to `query_users` tool
+- Client generates unique session ID (e.g., Streamlit session state)
+- Server maintains session context in memory
+- Sessions expire after 24 hours of inactivity
+
+**Default Parameters**:
+- Automatically applied to queries when not specified
+- Updated when new enterprise ID or company name is found
+- Priority: `ent_id` takes precedence over `company_name`
+
+---
+
+## Session Memory Management
+
+### Overview
+
+The system implements session-based memory management to remember default parameters (enterprise ID and company name) across queries within a session. This allows users to set context once and reference it in subsequent queries without repeating the enterprise ID or company name.
+
+### Implementation (`memory.py`)
+
+**Storage**: In-memory dictionary with session timestamps for expiry management
+
+**Key Functions**:
+
+#### `get_default_parameters(session_id: str) -> dict`
+- Retrieves default parameters for a session
+- Returns empty dict if session doesn't exist
+- Automatically cleans up expired sessions
+
+#### `update_default_parameters(session_id: str, parameters: dict) -> None`
+- Updates default parameters for a session
+- Only updates `ent_id` and `company_name` if present
+- Updates session timestamp for expiry tracking
+
+#### `clear_session(session_id: str) -> None`
+- Clears all default parameters for a session
+- Removes session from memory
+
+### Session Configuration
+
+**Session Expiry**: 24 hours of inactivity
+- Sessions are automatically cleaned up when accessed
+- Timestamps track last activity per session
+- Expired sessions are removed to prevent memory leaks
+
+### Usage Flow
+
+1. **First Query**: User specifies enterprise ID or company name
+   ```
+   Query: "Show me all data for enterprise 000"
+   Result: Data returned, ent_id="000" stored in session memory
+   ```
+
+2. **Subsequent Queries**: User can omit enterprise ID/company name
+   ```
+   Query: "Count units and KAUs"
+   Result: Uses default ent_id="000" from session memory
+   ```
+
+3. **Parameter Update**: New enterprise ID/company name updates session
+   ```
+   Query: "Get data for company ABC Corp"
+   Result: Data returned, company_name="ABC Corp" stored, replaces previous default
+   ```
+
+### Integration with NLP Layer
+
+The NLP layer (`nlp_layer.py`) receives default parameters and:
+1. Includes them in the prompt context if query doesn't specify enterprise/company
+2. Applies defaults to parsed intent if missing
+3. Prioritizes `ent_id` over `company_name` when both are available
+
+### Integration with Tools Layer
+
+The tools layer (`tools.py`) manages session memory:
+1. Retrieves default parameters before intent parsing
+2. Passes defaults to NLP layer
+3. Updates session memory when new `ent_id` or `company_name` values are found
+4. Only updates when new values are explicitly mentioned in queries
+
+### Memory Structure
+
+```python
+_default_parameters = {
+    "session_id_1": {
+        "ent_id": "000",
+        "company_name": "ABC Corp"
+    },
+    "session_id_2": {
+        "ent_id": "123"
+    }
+}
+
+_session_timestamps = {
+    "session_id_1": datetime(2024, 1, 15, 10, 30, 0),
+    "session_id_2": datetime(2024, 1, 15, 11, 45, 0)
+}
+```
+
+### Benefits
+
+- **Improved User Experience**: Users don't need to repeat enterprise/company identifiers
+- **Context Preservation**: Maintains context across multiple queries
+- **Flexible Updates**: Allows changing context mid-session
+- **Memory Efficient**: Automatic cleanup prevents memory leaks
+- **Session Isolation**: Each session maintains its own context
 
 ---
 
@@ -484,7 +787,7 @@ except Exception as e:
 
 #### 3. Timeout Errors
 **Source**: Long-running queries
-**Threshold**: 30 seconds
+**Threshold**: 60 seconds
 **Handling**:
 ```python
 try:
@@ -499,13 +802,34 @@ except QueryTimeoutError as e:
 - Invalid JSON response
 - Unrecognized intent
 - Malformed filters
+- Unsupported query types
 
 **Handling**:
 ```python
 try:
-    return json.loads(intent_text)
-except Exception:
+    intent_data = json.loads(response.choices[0].message.content)
+    return intent_data
+except Exception as e:
+    logger.error(f"Error parsing intent: {e}", exc_info=True)
     return {"action": "unknown", "filters": {}}
+```
+
+#### 5. Action-Specific Errors
+**Source**: Query builder and executor
+**Examples**:
+- Missing required parameters (ent_id, company_name, etc.)
+- Invalid variable names
+- Invalid date formats
+- Missing filters for required actions
+
+**Handling**:
+```python
+if not ent_id and not company_name:
+    return [{
+        "error": "Either enterprise ID or company name is required",
+        "sql_query": None,
+        "sql_params": []
+    }]
 ```
 
 ### Timeout Management
@@ -654,10 +978,10 @@ mcp.run(transport="streamable-http")
 **Test Queries**:
 ```python
 user_queries = [
-    "All the tables in the database",
-    "10 random rows from the table item_kaus",
-    "Row with id 1957777 from the table item_kaus",
-    "7 joined records from the table item_kaus_original and item_kaus"
+    "Show me all data for enterprise 000",
+    "Count units and KAUs for enterprise 000",
+    "What companies submitted on 2023-09-20",
+    "Show revenue values where revenue differs from profit by more than 20% for company ABC"
 ]
 ```
 
@@ -772,8 +1096,10 @@ possible_paths = [
 ┌─────────────────┐
 │  MCP Client     │
 │  (Streamlit)    │
+│  + Session ID   │
 └─────────┬───────┘
           │ HTTP Request
+          │ (session_id)
           ▼
 ┌─────────────────┐
 │  MCP Server     │
@@ -782,32 +1108,48 @@ possible_paths = [
           │
           ▼
 ┌─────────────────┐
+│  Session Memory │
+│  (Get Defaults) │
+└─────────┬───────┘
+          │
+          ▼
+┌─────────────────┐
 │  NLP Intent     │
 │  Parser         │
+│  (with defaults)│
 └─────────┬───────┘
           │ OpenAI API
+          │ (GPT-4o-mini)
           ▼
 ┌─────────────────┐
 │  Intent JSON    │
-│  Processing     │
+│  + Apply Defaults│
+└─────────┬───────┘
+          │
+          ▼
+┌─────────────────┐
+│  Update Session │
+│  Memory         │
 └─────────┬───────┘
           │
           ▼
 ┌─────────────────┐
 │  Query Builder  │
-│  & Validation   │
+│  (AIES-specific)│
 └─────────┬───────┘
           │
           ▼
 ┌─────────────────┐
 │  Database       │
 │  Execution      │
+│  (with timeout)  │
 └─────────┬───────┘
           │
           ▼
 ┌─────────────────┐
 │  Result         │
 │  Processing     │
+│  + SQL Logging  │
 └─────────┬───────┘
           │
           ▼
@@ -822,20 +1164,29 @@ possible_paths = [
 ```
 ┌─────────────────┐
 │  User Query     │
-│  "Get 5 users   │
-│  where age>25"  │
+│  "Show data for │
+│  enterprise 000"│
+└─────────┬───────┘
+          │
+          ▼
+┌─────────────────┐
+│  Get Default    │
+│  Parameters     │
+│  (if session)   │
 └─────────┬───────┘
           │
           ▼
 ┌─────────────────┐
 │  System Prompt  │
 │  + Examples     │
+│  + Defaults     │
 └─────────┬───────┘
           │
           ▼
 ┌─────────────────┐
 │  OpenAI API     │
 │  (GPT-4o-mini)  │
+│  JSON Format    │
 └─────────┬───────┘
           │
           ▼
@@ -843,17 +1194,24 @@ possible_paths = [
 │  JSON Response  │
 │  {              │
 │    "action":    │
-│    "fetch_n_    │
-│    records",    │
-│    "filters":    │
-│    {...}        │
+│    "fetch_data",│
+│    "filters": { │
+│      "ent_id":  │
+│      "000"      │
+│    }            │
 │  }              │
 └─────────┬───────┘
           │
           ▼
 ┌─────────────────┐
-│  Intent         │
-│  Validation     │
+│  Apply Defaults │
+│  (if missing)   │
+└─────────┬───────┘
+          │
+          ▼
+┌─────────────────┐
+│  Update Session │
+│  Memory         │
 └─────────────────┘
 ```
 
@@ -864,10 +1222,11 @@ possible_paths = [
 │  Intent JSON    │
 │  {              │
 │    "action":    │
-│    "fetch_n_    │
-│    records",    │
-│    "filters":    │
-│    {...}        │
+│    "fetch_data",│
+│    "filters": { │
+│      "ent_id":  │
+│      "000"      │
+│    }            │
 │  }              │
 └─────────┬───────┘
           │
@@ -875,22 +1234,25 @@ possible_paths = [
 ┌─────────────────┐
 │  Action         │
 │  Routing        │
+│  (6 query types)│
 └─────────┬───────┘
           │
           ▼
 ┌─────────────────┐
-│  Input          │
-│  Validation     │
-│  - Columns      │
-│  - Tables       │
-│  - Conditions   │
+│  Parameter      │
+│  Extraction     │
+│  - ent_id/name  │
+│  - variables    │
+│  - dates        │
 └─────────┬───────┘
           │
           ▼
 ┌─────────────────┐
 │  SQL            │
 │  Construction   │
-│  - Templates    │
+│  (AIES-specific)│
+│  - Base Join    │
+│  - Subqueries   │
 │  - Parameters   │
 └─────────┬───────┘
           │
@@ -898,7 +1260,7 @@ possible_paths = [
 ┌─────────────────┐
 │  Database       │
 │  Execution      │
-│  (with timeout) │
+│  (60s timeout) │
 └─────────┬───────┘
           │
           ▼
@@ -906,13 +1268,13 @@ possible_paths = [
 │  Result         │
 │  Processing     │
 │  - Formatting   │
-│  - Visualization│
+│  - SQL Logging  │
 └─────────┬───────┘
           │
           ▼
 ┌─────────────────┐
 │  Response       │
-│  JSON           │
+│  JSON + SQL     │
 └─────────────────┘
 ```
 
@@ -967,10 +1329,12 @@ possible_paths = [
 The MCP Server provides a comprehensive natural language interface to database operations through a well-architected system of components. The documentation above covers all major processes, from initial user input through final response delivery, including error handling, security measures, and deployment considerations.
 
 Key strengths of the system include:
-- **Robust NLP Processing**: Sophisticated intent parsing with comprehensive examples
-- **Secure Database Access**: Multiple layers of validation and parameterized queries
-- **Flexible Query Support**: Support for complex operations including joins, unions, and analytics
-- **Reliable Error Handling**: Comprehensive error classification and user-friendly responses
-- **Production Ready**: Timeout protection, logging, and containerized deployment
+- **Domain-Specific Design**: Tailored for enterprise and company data operations in the AIES database
+- **Robust NLP Processing**: Sophisticated intent parsing with 6 specialized query types
+- **Session-Based Context**: Remembers enterprise ID and company name across queries
+- **Secure Database Access**: Parameterized queries prevent SQL injection
+- **Complex Join Patterns**: Efficient handling of multi-table joins across schemas
+- **Reliable Error Handling**: Comprehensive error classification with SQL query logging
+- **Production Ready**: 60-second timeout protection, logging, and containerized deployment
 
-This documentation serves as a complete reference for understanding, maintaining, and extending the MCP server system.
+This documentation serves as a complete reference for understanding, maintaining, and extending the MCP server system for AIES database operations.

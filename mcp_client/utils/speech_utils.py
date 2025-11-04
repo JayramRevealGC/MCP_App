@@ -61,46 +61,45 @@ def render_speech_settings():
     device_list = ["cpu", "cuda"]
     compute_type_list = ["int8", "float16", "float32"]
     
-    # Render sidebar UI
-    with st.sidebar:
-        st.header("Speech Settings")
-        
-        # Model configuration selectors
-        model_size = st.selectbox(
-            "Model", 
-            model_list, 
-            index=model_list.index(st.session_state.model_size)
-        )
-        device = st.selectbox(
-            "Device", 
-            device_list, 
-            index=device_list.index(st.session_state.device)
-        )
-        compute_type = st.selectbox(
-            "Precision", 
-            compute_type_list, 
-            index=compute_type_list.index(st.session_state.compute_type)
-        )
-        
-        # Persist user choices
-        st.session_state.device = device
-        st.session_state.compute_type = compute_type
-        st.session_state.model_size = model_size
-        
-        # Load model with selected settings
-        model = load_model_cached(
-            st.session_state.model_size, 
-            st.session_state.device, 
-            st.session_state.compute_type
-        )
-        
-        # Show success message
-        st.success(
-            f"Model loaded: Whisper {st.session_state.model_size} "
-            f"on {st.session_state.device} ({st.session_state.compute_type})"
-        )
-        
-        return model
+    # Render speech settings UI (already in sidebar context)
+    st.markdown("#### Speech Settings")
+    
+    # Model configuration selectors
+    model_size = st.selectbox(
+        "Model", 
+        model_list, 
+        index=model_list.index(st.session_state.model_size)
+    )
+    device = st.selectbox(
+        "Device", 
+        device_list, 
+        index=device_list.index(st.session_state.device)
+    )
+    compute_type = st.selectbox(
+        "Precision", 
+        compute_type_list, 
+        index=compute_type_list.index(st.session_state.compute_type)
+    )
+    
+    # Persist user choices
+    st.session_state.device = device
+    st.session_state.compute_type = compute_type
+    st.session_state.model_size = model_size
+    
+    # Load model with selected settings
+    model = load_model_cached(
+        st.session_state.model_size, 
+        st.session_state.device, 
+        st.session_state.compute_type
+    )
+    
+    # Show success message
+    st.success(
+        f"Model loaded: Whisper {st.session_state.model_size} "
+        f"on {st.session_state.device} ({st.session_state.compute_type})"
+    )
+    
+    return model
 
 ###################
 # Audio Component #

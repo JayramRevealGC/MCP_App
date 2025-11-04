@@ -8,8 +8,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Query timeout configuration (30 seconds)
-QUERY_TIMEOUT = 30
+# Query timeout configuration (60 seconds)
+QUERY_TIMEOUT = 60
 
 class QueryTimeoutError(Exception):
     """Raised when a database query exceeds the timeout limit."""
@@ -17,7 +17,7 @@ class QueryTimeoutError(Exception):
 
 def timeout_handler(signum, frame):
     """Signal handler for query timeout."""
-    raise QueryTimeoutError("Query execution timed out after 30 seconds")
+    raise QueryTimeoutError("Query execution timed out after 60 seconds")
 
 def execute_with_timeout(func, *args, **kwargs):
     """Execute a function with a timeout limit."""

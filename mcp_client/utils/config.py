@@ -42,13 +42,12 @@ DB_INSTRUCTIONS = {
     "title": "What can you do?",
     "expanded": True,
     "instructions": [
-        "**Fetch Tables**: List all available tables in the database",
-        "**Fetch Records**: Get n records from any table with advanced filtering and sorting", 
-        "**Join Tables**: Join two tables with flexible join types",
-        "**Append Tables**: Combine two tables vertically using UNION ALL",
-        "**Table Summary**: Get comprehensive table information and statistics",
-        "**Column Summary**: Create pie charts by counting values in categorical columns",
-        "**Relationship Analysis**: Analyze relationships between categorical and quantitative columns"
+        "**Fetch Data**: Get data for an enterprise or company by ID or name (all fields or specific variables)",
+        "**Compare Variables**: Compare two variables with a percentage difference threshold for a company",
+        "**Filter by Date**: Find companies that submitted data on a specific date",
+        "**Count Units & KAUs**: Count units and KAUs for a specific company or enterprise",
+        "**Count Enterprises**: Count the total number of unique enterprises in the database",
+        "**Get Company Name**: Retrieve the company name for a specific enterprise ID"
     ]
 }
 

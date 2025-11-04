@@ -11,21 +11,31 @@ from datetime import datetime
 
 # Local Imports
 from .config import get_logo_path
-from .chat_utils import create_new_chat, get_current_chat
 from .speech_utils import render_speech_settings
+from .chat_utils import create_new_chat, get_current_chat
 
 def render_sidebar():
     """Render the complete sidebar with chat management and settings."""
     with st.sidebar:
         render_sidebar_logo()
-        st.markdown("---")  # Add a separator line
-        render_chat_settings()
-        st.markdown("---")  # Add a separator line
-        speech_model = render_speech_settings()
-        st.markdown("---")  # Add a separator line
-        render_chat_management()
-        render_chat_history()
-        st.markdown("---")  # Add a separator line
+        st.markdown("---")
+
+        # Chat Management Section - Collapsible
+        with st.expander("Chat Management", expanded=True):
+            render_chat_management()
+            render_chat_history()
+        
+        st.markdown("---")
+
+        # Settings Section - Collapsible
+        with st.expander("Settings", expanded=False):
+            render_chat_settings()
+            st.markdown("---")
+            speech_model = render_speech_settings()
+        
+        st.markdown("---")
+        
+        # Export Options Section - Collapsible
         render_export_options()
 
     return speech_model
@@ -66,13 +76,14 @@ def render_sidebar_logo():
 
 def render_chat_settings():
     """Render chat settings section in sidebar."""
-    st.markdown("### Chat Settings")
+    st.markdown("#### AI Model")
     
     # AI Model selection
     model = st.selectbox(
-        "AI Model",
+        "Model",
         ["GPT-4"],
-        index=0
+        index=0,
+        label_visibility="collapsed"
     )
     
     # Store model in session state
@@ -80,17 +91,15 @@ def render_chat_settings():
 
 def render_chat_management():
     """Render chat management section in sidebar."""
-    st.markdown("### Chat Management")
-    
     # New chat button
-    if st.button("New Chat", width='stretch'):
+    if st.button("New Chat", use_container_width=True):
         new_chat_id = create_new_chat()
         st.success(f"Created new chat: {new_chat_id[:8]}...")
         st.rerun()
 
 def render_chat_history():
     """Render chat history section in sidebar."""
-    st.subheader("Chat History")
+    st.markdown("#### Chat History")
     
     if st.session_state.chats:
         for chat_id, chat_data in st.session_state.chats.items():
@@ -105,7 +114,7 @@ def render_chat_history():
             # Style the button differently if it's the active chat
             button_type = "primary" if is_active else "secondary"
             
-            if st.button(chat_name, key=f"chat_{chat_id}", type=button_type, width='stretch'):
+            if st.button(chat_name, key=f"chat_{chat_id}", type=button_type, use_container_width=True):
                 st.session_state.current_chat_id = chat_id
                 st.rerun()
     else:
@@ -117,17 +126,14 @@ def render_export_options():
     current_chat = get_current_chat()
     
     if current_chat and current_chat.get('messages'):
+        # Export Options Section - Collapsible
+        with st.expander("Export Options", expanded=False):
+            # Download chat history - direct download
+            download_chat_history(current_chat)
 
-        st.markdown("### Export Options")
-
-        # Download chat history - direct download
-        download_chat_history(current_chat)
-        
-        # Clear chat button
-        if st.button("❌ Clear Chat", width='stretch'):
-            clear_current_chat()
-        
-        st.markdown("---")  # Add a separator line
+            # Clear chat button
+            if st.button("Clear Chat", use_container_width=True):
+                clear_current_chat()
 
 def download_chat_history(chat_data: Dict[str, Any]):
     """Create and download chat history as text file."""
@@ -147,11 +153,11 @@ def download_chat_history(chat_data: Dict[str, Any]):
         filename = f"reveal_labs_chat_{timestamp}.txt"
         
         st.download_button(
-            label="⬇️ Download Chat",
+            label="Download Chat",
             data=chat_text,
             file_name=filename,
             mime="text/plain",
-            width='stretch'
+            use_container_width=True
         )
         
     except Exception as e:
